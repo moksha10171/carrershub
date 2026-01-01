@@ -77,7 +77,7 @@ export default function HomePage() {
                         >
                             <Link href="/techcorp/careers" className="w-full sm:w-auto">
                                 <Button size="xl" className="w-full sm:w-auto group text-lg px-10 py-7 rounded-2xl shadow-lg hover:shadow-xl transition-all">
-                                    View Demo Page
+                                    View Example Page
                                     <ArrowRight className="h-6 w-6 group-hover:translate-x-1 transition-transform" />
                                 </Button>
                             </Link>
@@ -292,7 +292,7 @@ export default function HomePage() {
                                     size="xl"
                                     className="bg-white text-indigo-600 hover:bg-gray-100 text-lg px-12 py-8 rounded-2xl"
                                 >
-                                    Explore Demo
+                                    View Example
                                     <ArrowRight className="h-6 w-6 ml-3" />
                                 </Button>
                             </Link>

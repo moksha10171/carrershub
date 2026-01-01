@@ -7,7 +7,7 @@ import { Globe, Mail, MapPin, Phone, Github, Linkedin, Twitter } from 'lucide-re
 const footerLinks = {
     product: [
         { label: 'Features', href: '/#features' },
-        { label: 'Demo', href: '/techcorp/careers' },
+        { label: 'Examples', href: '/techcorp/careers' },
         { label: 'Pricing', href: '/pricing' },
     ],
     company: [

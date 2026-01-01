@@ -88,6 +88,7 @@ export default function DashboardPage() {
         { label: 'Preview Page', href: `/${company.slug}/preview`, icon: Eye, description: 'See how it looks' },
         { label: 'Edit Content', href: `/${company.slug}/edit?tab=content`, icon: Edit, description: 'About, Culture, Benefits' },
         { label: 'Manage Jobs', href: '/dashboard/jobs', icon: Briefcase, description: 'Post and edit jobs' },
+        { label: 'Account Settings', href: '/dashboard/settings', icon: Settings, description: 'Password & Security' },
     ] : [];
 
     const [publicUrl, setPublicUrl] = useState('');

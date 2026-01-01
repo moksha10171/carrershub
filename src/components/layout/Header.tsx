@@ -7,6 +7,8 @@ import { Menu, X, Globe, Moon, Sun, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 
+import { createClient } from '@/lib/supabase/client';
+
 interface HeaderProps {
     variant?: 'transparent' | 'solid';
     showDarkModeToggle?: boolean;
@@ -17,9 +19,19 @@ export function Header({ variant = 'solid', showDarkModeToggle = true }: HeaderP
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isDark, setIsDark] = useState(false);
     const [mounted, setMounted] = useState(false);
+    const [user, setUser] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const supabase = createClient();
 
     useEffect(() => {
         setMounted(true);
+
+        const checkAuth = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            setUser(user);
+            setLoading(false);
+        };
+        checkAuth();
 
         const handleScroll = () => setIsScrolled(window.scrollY > 20);
         window.addEventListener('scroll', handleScroll, { passive: true });
@@ -44,10 +56,15 @@ export function Header({ variant = 'solid', showDarkModeToggle = true }: HeaderP
         localStorage.setItem('theme', newDark ? 'dark' : 'light');
     };
 
+    const handleSignOut = async () => {
+        await supabase.auth.signOut();
+        window.location.href = '/';
+    };
+
     const navLinks = [
         { href: '/', label: 'Home' },
         { href: '/about', label: 'About' },
-        { href: '/techcorp/careers', label: 'Demo' },
+        { href: '/techcorp/careers', label: 'Examples' }, // Renamed from Demo
         { href: '/contact', label: 'Contact' },
     ];
 
@@ -120,11 +137,28 @@ export function Header({ variant = 'solid', showDarkModeToggle = true }: HeaderP
                             </button>
                         )}
 
-                        <Link href="/login" className="hidden sm:block">
-                            <Button variant={isTransparent ? 'secondary' : 'primary'} size="sm">
-                                Get Started
-                            </Button>
-                        </Link>
+                        {!loading && user ? (
+                            <div className="hidden sm:flex items-center gap-3">
+                                <Link href="/dashboard">
+                                    <Button variant={isTransparent ? 'secondary' : 'primary'} size="sm">
+                                        Dashboard
+                                    </Button>
+                                </Link>
+                            </div>
+                        ) : (
+                            <div className="hidden sm:flex items-center gap-3">
+                                <Link href="/login">
+                                    <Button variant="ghost" size="sm" className={isTransparent ? 'text-white hover:bg-white/20' : ''}>
+                                        Sign In
+                                    </Button>
+                                </Link>
+                                <Link href="/signup">
+                                    <Button variant={isTransparent ? 'secondary' : 'primary'} size="sm">
+                                        Get Started
+                                    </Button>
+                                </Link>
+                            </div>
+                        )}
 
                         {/* Mobile menu button */}
                         <button

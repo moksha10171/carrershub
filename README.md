@@ -143,12 +143,11 @@ Colors are controlled via CSS variables in `globals.css`:
 
 ## 🗺 Improvement Roadmap
 
-1. **Full Supabase Integration** - Replace demo data with real database
-2. **Image Uploads** - Logo and banner via Supabase Storage
-3. **Drag-and-Drop Sections** - Reorder content sections
-4. **Rich Text Editor** - For section content
-5. **Application Flow** - Allow candidates to apply
-6. **Analytics** - Track page views and conversions
+1. **Image Uploads** - Logo and banner via Supabase Storage
+2. **Drag-and-Drop Sections** - Reorder content sections
+3. **Rich Text Editor** - For section content
+4. **Application Flow** - Allow candidates to apply
+5. **Analytics** - Track page views and conversions
 
 ## 👤 User Guide
 
