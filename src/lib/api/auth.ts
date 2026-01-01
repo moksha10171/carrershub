@@ -36,14 +36,58 @@ export function unauthorizedResponse() {
 export async function hasCompanyAccess(userId: string, companyId: string): Promise<boolean> {
     const supabase = await createServerSupabaseClient();
 
-    // Check if user is associated with this company
-    // In a real app, you'd have a company_users table
+    // Check if user owns this company
     const { data, error } = await supabase
         .from('companies')
         .select('id')
         .eq('id', companyId)
-        .eq('owner_id', userId)  // Assuming companies have an owner_id field
+        .eq('user_id', userId)  // Using user_id to match schema
         .single();
 
     return !!data && !error;
 }
+
+/**
+ * Helper to get user's company
+ * @param userId - User ID
+ * @returns Company object or null
+ */
+export async function getUserCompany(userId: string) {
+    const supabase = await createServerSupabaseClient();
+
+    const { data, error } = await supabase
+        .from('companies')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+    if (error || !data) {
+        return null;
+    }
+
+    return data;
+}
+
+/**
+ * Helper to get user's company by slug
+ * @param userId - User ID
+ * @param slug - Company slug
+ * @returns Company object or null
+ */
+export async function getUserCompanyBySlug(userId: string, slug: string) {
+    const supabase = await createServerSupabaseClient();
+
+    const { data, error } = await supabase
+        .from('companies')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('slug', slug)
+        .single();
+
+    if (error || !data) {
+        return null;
+    }
+
+    return data;
+}
+

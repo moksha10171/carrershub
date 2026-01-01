@@ -8,60 +8,70 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import {
     Briefcase, Users, Eye, Settings, Palette, Copy, Check,
-    BarChart3, TrendingUp, Globe, ExternalLink, Edit, Plus
+    BarChart3, TrendingUp, Globe, ExternalLink, Edit, Plus, Building
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-
-const quickActions = [
-    { label: 'Edit Branding', href: '/techcorp/edit', icon: Palette, description: 'Colors, logo, banner' },
-    { label: 'Preview Page', href: '/techcorp/preview', icon: Eye, description: 'See how it looks' },
-    { label: 'Edit Content', href: '/techcorp/edit?tab=content', icon: Edit, description: 'About, Culture, Benefits' },
-    { label: 'Manage Jobs', href: '/dashboard/jobs', icon: Briefcase, description: 'Post and edit jobs' },
-];
 
 export default function DashboardPage() {
     const [copied, setCopied] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [user, setUser] = useState<any>(null);
+    const [company, setCompany] = useState<any>(null);
+    const [hasCompany, setHasCompany] = useState(true);
     const router = useRouter();
     const supabase = createClient();
 
     const [stats, setStats] = useState([
-        { label: 'Open Positions', value: '0', icon: Briefcase, change: 'Fetching...', color: 'indigo' },
-        { label: 'Page Views', value: '0', icon: Eye, change: 'Fetching...', color: 'green' },
-        { label: 'Applications', value: '0', icon: Users, change: 'Fetching...', color: 'purple' },
-        { label: 'Locations', value: '0', icon: Globe, change: 'Fetching...', color: 'blue' },
+        { label: 'Open Positions', value: '0', icon: Briefcase, change: 'Loading...', color: 'indigo' },
+        { label: 'Departments', value: '0', icon: Users, change: 'Loading...', color: 'purple' },
+        { label: 'Locations', value: '0', icon: Globe, change: 'Loading...', color: 'blue' },
+        { label: 'Remote Jobs', value: '0', icon: Eye, change: 'Loading...', color: 'green' },
     ]);
-    const publicUrl = 'https://careerhub.app/techcorp/careers';
 
-    // Check authentication
+    // Check authentication and fetch company
     useEffect(() => {
-        const checkAuth = async () => {
+        const checkAuthAndFetchCompany = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) {
                 router.push('/login');
                 return;
             }
             setUser(user);
+
+            // Fetch user's company
+            const { data: companyData, error } = await supabase
+                .from('companies')
+                .select('*')
+                .eq('user_id', user.id)
+                .single();
+
+            if (companyData && !error) {
+                setCompany(companyData);
+                setHasCompany(true);
+            } else {
+                // No company yet - show onboarding
+                setHasCompany(false);
+            }
             setIsLoading(false);
         };
-        checkAuth();
-    }, [router, supabase.auth]);
+        checkAuthAndFetchCompany();
+    }, [router, supabase]);
 
+    // Fetch stats when company is available
     useEffect(() => {
-        if (!user) return;
+        if (!company) return;
 
         const fetchStats = async () => {
             try {
-                const response = await fetch('/api/companies?slug=techcorp');
+                const response = await fetch(`/api/companies?slug=${company.slug}`);
                 const data = await response.json();
                 if (data.success && data.data.stats) {
                     const s = data.data.stats;
                     setStats([
-                        { label: 'Open Positions', value: s.totalJobs.toString(), icon: Briefcase, change: '+12 this month', color: 'indigo' },
-                        { label: 'Departments', value: s.departments.toString(), icon: Users, change: 'Active teams', color: 'purple' },
+                        { label: 'Open Positions', value: s.totalJobs.toString(), icon: Briefcase, change: 'Active listings', color: 'indigo' },
+                        { label: 'Departments', value: s.departments.toString(), icon: Users, change: 'Hiring teams', color: 'purple' },
                         { label: 'Locations', value: s.locations.toString(), icon: Globe, change: 'Global reach', color: 'blue' },
-                        { label: 'Remote Jobs', value: s.remoteJobs.toString(), icon: Eye, change: 'Work from anywhere', color: 'green' },
+                        { label: 'Remote Jobs', value: s.remoteJobs.toString(), icon: Eye, change: 'Work anywhere', color: 'green' },
                     ]);
                 }
             } catch (error) {
@@ -69,13 +79,59 @@ export default function DashboardPage() {
             }
         };
         fetchStats();
-    }, [user]);
+    }, [company]);
+
+    // Dynamic quick actions based on company
+    const quickActions = company ? [
+        { label: 'Edit Branding', href: `/${company.slug}/edit`, icon: Palette, description: 'Colors, logo, banner' },
+        { label: 'Preview Page', href: `/${company.slug}/preview`, icon: Eye, description: 'See how it looks' },
+        { label: 'Edit Content', href: `/${company.slug}/edit?tab=content`, icon: Edit, description: 'About, Culture, Benefits' },
+        { label: 'Manage Jobs', href: '/dashboard/jobs', icon: Briefcase, description: 'Post and edit jobs' },
+    ] : [];
+
+    const publicUrl = company ? `${window.location.origin}/${company.slug}/careers` : '';
 
     // Show loading state while checking auth
     if (isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+            </div>
+        );
+    }
+
+    // Show onboarding if user has no company
+    if (!hasCompany) {
+        return (
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+                <main className="pt-20 pb-12">
+                    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="max-w-2xl mx-auto text-center"
+                        >
+                            <div className="w-20 h-20 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center mx-auto mb-6">
+                                <Building className="h-10 w-10 text-indigo-600 dark:text-indigo-400" />
+                            </div>
+                            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+                                Welcome to CareerHub!
+                            </h1>
+                            <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
+                                Let's set up your company's careers page. It only takes a minute.
+                            </p>
+                            <Link href="/onboarding">
+                                <Button size="lg" className="px-8">
+                                    <Plus className="h-5 w-5 mr-2" />
+                                    Create Your Careers Page
+                                </Button>
+                            </Link>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-6">
+                                Or explore our <Link href="/techcorp/careers" className="text-indigo-600 dark:text-indigo-400 hover:underline">demo page</Link> first
+                            </p>
+                        </motion.div>
+                    </div>
+                </main>
             </div>
         );
     }
@@ -94,7 +150,7 @@ export default function DashboardPage() {
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                         <div>
                             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-                                Dashboard
+                                {company?.name || 'Dashboard'}
                             </h1>
                             <p className="text-gray-600 dark:text-gray-400 mt-1">
                                 Welcome back! Manage your careers page here.
