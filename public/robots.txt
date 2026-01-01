@@ -1,0 +1,15 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Disallow admin and auth pages
+Disallow: /dashboard
+Disallow: /login
+Disallow: /signup
+Disallow: /api/
+
+# Allow public careers pages
+Allow: /*/careers
+
+# Sitemap
+Sitemap: https://careerhub.app/sitemap.xml

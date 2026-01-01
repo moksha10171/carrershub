@@ -1,0 +1,283 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* === Custom CSS Variables for Dynamic Theming === */
+:root {
+  /* Primary colors - will be overridden by company branding */
+  --primary-50: #eef2ff;
+  --primary-100: #e0e7ff;
+  --primary-200: #c7d2fe;
+  --primary-300: #a5b4fc;
+  --primary-400: #818cf8;
+  --primary-500: #6366f1;
+  --primary-600: #4f46e5;
+  --primary-700: #4338ca;
+  --primary-800: #3730a3;
+  --primary-900: #312e81;
+
+  /* Neutral colors */
+  --background: #ffffff;
+  --foreground: #0f172a;
+
+  /* Spacing rhythm */
+  --section-padding: clamp(3rem, 8vw, 6rem);
+  --container-padding: clamp(1rem, 4vw, 2rem);
+}
+
+.dark {
+  --background: #0f172a;
+  --foreground: #f8fafc;
+}
+
+/* === Base Styles === */
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Better focus styles */
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary-500 ring-offset-2 ring-offset-white dark:ring-offset-gray-900;
+  }
+
+  /* Remove focus on click for mouse users */
+  :focus:not(:focus-visible) {
+    outline: none;
+    box-shadow: none;
+  }
+
+  /* Typography */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-bold tracking-tight;
+  }
+
+  /* Links */
+  a {
+    @apply transition-colors duration-200;
+  }
+}
+
+/* === Component Styles === */
+@layer components {
+
+  /* Container */
+  .container {
+    @apply mx-auto w-full;
+    max-width: min(1280px, 100% - var(--container-padding) * 2);
+  }
+
+  /* Cards */
+  .card {
+    @apply bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm;
+  }
+
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-lg hover:border-primary-500/50 hover:-translate-y-0.5;
+  }
+
+  /* Buttons base */
+  .btn {
+    @apply inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary-600 to-purple-600 bg-clip-text text-transparent;
+  }
+
+  /* Section spacing */
+  .section {
+    padding-top: var(--section-padding);
+    padding-bottom: var(--section-padding);
+  }
+}
+
+/* === Utility Styles === */
+@layer utilities {
+
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Line clamp utilities */
+  .line-clamp-1 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+  }
+
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .line-clamp-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  /* Safe area padding for mobile */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Backdrop blur fallback */
+  .backdrop-blur-fallback {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  /* Animation delays */
+  .animation-delay-100 {
+    animation-delay: 100ms;
+  }
+
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+
+  .animation-delay-300 {
+    animation-delay: 300ms;
+  }
+
+  .animation-delay-500 {
+    animation-delay: 500ms;
+  }
+}
+
+/* === Accessibility === */
+/* Skip to main content link */
+.skip-link {
+  @apply absolute -top-10 left-4 z-[100] bg-primary-600 text-white px-4 py-2 rounded-md;
+  @apply focus:top-4 transition-all duration-200;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  :root {
+    --primary-500: #0000ff;
+    --primary-600: #0000cc;
+  }
+
+  .card {
+    border-width: 2px;
+  }
+}
+
+/* === Print Styles === */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    font-size: 12pt;
+    color: black;
+    background: white;
+  }
+
+  a {
+    text-decoration: underline;
+  }
+}
+
+/* === Prose Styles for Content Sections === */
+.prose {
+  @apply text-gray-600 dark:text-gray-300;
+}
+
+.prose p {
+  @apply mb-4 leading-relaxed;
+}
+
+.prose ul {
+  @apply list-disc pl-6 mb-4 space-y-2;
+}
+
+.prose li {
+  @apply leading-relaxed;
+}
+
+.prose strong {
+  @apply font-semibold text-gray-900 dark:text-white;
+}
+
+.prose h3 {
+  @apply text-lg font-semibold text-gray-900 dark:text-white mt-6 mb-3;
+}
+
+/* === Selection === */
+::selection {
+  background-color: rgba(99, 102, 241, 0.3);
+  color: #312e81;
+}
+
+.dark ::selection {
+  color: #e0e7ff;
+}
+
+/* === Custom Scrollbar (optional) === */
+@media (min-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100 dark:bg-gray-800;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400 dark:bg-gray-500;
+  }
+}
