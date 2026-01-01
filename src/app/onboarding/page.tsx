@@ -47,7 +47,8 @@ export default function OnboardingPage() {
             setIsCheckingAuth(false);
         };
         checkAuth();
-    }, [router, supabase]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [router]);
 
     // Auto-generate slug from company name
     useEffect(() => {
@@ -83,7 +84,8 @@ export default function OnboardingPage() {
 
         const timer = setTimeout(checkSlug, 500);
         return () => clearTimeout(timer);
-    }, [slug, supabase]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [slug]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

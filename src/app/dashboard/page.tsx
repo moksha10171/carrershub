@@ -55,7 +55,8 @@ export default function DashboardPage() {
             setIsLoading(false);
         };
         checkAuthAndFetchCompany();
-    }, [router, supabase]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [router]);
 
     // Fetch stats when company is available
     useEffect(() => {
@@ -89,7 +90,14 @@ export default function DashboardPage() {
         { label: 'Manage Jobs', href: '/dashboard/jobs', icon: Briefcase, description: 'Post and edit jobs' },
     ] : [];
 
-    const publicUrl = company ? `${window.location.origin}/${company.slug}/careers` : '';
+    const [publicUrl, setPublicUrl] = useState('');
+
+    // Set public URL on client side only
+    useEffect(() => {
+        if (company && typeof window !== 'undefined') {
+            setPublicUrl(`${window.location.origin}/${company.slug}/careers`);
+        }
+    }, [company]);
 
     // Show loading state while checking auth
     if (isLoading) {

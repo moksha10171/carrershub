@@ -73,18 +73,24 @@ export default function EditPage({ params }: { params: { 'company-slug': string 
     const [hasChanges, setHasChanges] = useState(false);
 
     // Keyboard shortcuts (Ctrl+S to save)
+    // Use ref to prevent stale closure issues
+    const saveStateRef = useRef({ hasChanges, isSaving });
+    saveStateRef.current = { hasChanges, isSaving };
+
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                 e.preventDefault();
-                if (hasChanges && !isSaving) {
-                    handleSave();
+                const { hasChanges: hasChangesNow, isSaving: isSavingNow } = saveStateRef.current;
+                if (hasChangesNow && !isSavingNow) {
+                    // Trigger save via form submission or manual call
+                    document.getElementById('save-button')?.click();
                 }
             }
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [hasChanges, isSaving]);
+    }, []);
 
     // Fetch data on mount - try LocalStorage first, then API
     useEffect(() => {
@@ -96,19 +102,24 @@ export default function EditPage({ params }: { params: { 'company-slug': string 
                 const savedData = localStorage.getItem(`company_${companySlug}`);
                 if (savedData) {
                     const data = JSON.parse(savedData);
-                    setBrandSettings({
-                        companyName: data.company.name,
-                        tagline: data.company.tagline || '',
-                        website: data.company.website || '',
-                        primaryColor: data.settings.primary_color,
-                        secondaryColor: data.settings.secondary_color,
-                        accentColor: data.settings.accent_color,
-                        logoUrl: data.company.logo_url || '',
-                        bannerUrl: data.company.banner_url || '',
-                        cultureVideoUrl: data.settings.culture_video_url || '',
-                    });
-                    setSections(data.sections || []);
-                    return;
+                    // Validate the data structure before using
+                    if (data?.company?.name && data?.settings) {
+                        setBrandSettings({
+                            companyName: data.company.name || 'Untitled Company',
+                            tagline: data.company.tagline || '',
+                            website: data.company.website || '',
+                            primaryColor: data.settings.primary_color || '#6366F1',
+                            secondaryColor: data.settings.secondary_color || '#4F46E5',
+                            accentColor: data.settings.accent_color || '#10B981',
+                            logoUrl: data.company.logo_url || '',
+                            bannerUrl: data.company.banner_url || '',
+                            cultureVideoUrl: data.settings.culture_video_url || '',
+                        });
+                        if (data.sections && Array.isArray(data.sections)) {
+                            setSections(data.sections);
+                        }
+                        return;
+                    }
                 }
 
                 // Fallback to API/demo data
@@ -140,7 +151,7 @@ export default function EditPage({ params }: { params: { 'company-slug': string 
             }
         };
         fetchData();
-    }, [companySlug]);
+    }, [companySlug, user]);
 
     const handleBrandChange = (field: string, value: string) => {
         setBrandSettings({ ...brandSettings, [field]: value });
@@ -244,15 +255,20 @@ export default function EditPage({ params }: { params: { 'company-slug': string 
                     {/* Page Header */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                         <div className="flex items-center gap-3">
-                            <Link href="/dashboard" className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors">
+                            <Link href="/dashboard" className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors" aria-label="Back to dashboard">
                                 <ChevronLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                             </Link>
                             <div>
-                                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                                    Edit Careers Page
-                                </h1>
+                                <div className="flex items-center gap-2">
+                                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+                                        Edit Careers Page
+                                    </h1>
+                                    <span className="px-2 py-0.5 text-xs font-mono bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-md">
+                                        /{companySlug}
+                                    </span>
+                                </div>
                                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                                    Customize your company&apos;s careers page
+                                    {brandSettings.companyName || 'Customize your company\'s careers page'}
                                 </p>
                             </div>
                         </div>
@@ -264,6 +280,7 @@ export default function EditPage({ params }: { params: { 'company-slug': string 
                                 </Button>
                             </Link>
                             <Button
+                                id="save-button"
                                 size="sm"
                                 onClick={handleSave}
                                 isLoading={isSaving}

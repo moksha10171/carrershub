@@ -36,20 +36,27 @@ export default function PreviewPage() {
                 const savedData = localStorage.getItem(`company_${companySlug}`);
                 if (savedData) {
                     const data = JSON.parse(savedData);
-                    setCompany({
-                        ...demoCompany,
-                        name: data.company.name,
-                        tagline: data.company.tagline,
-                        logo_url: data.company.logo_url,
-                        banner_url: data.company.banner_url,
-                    });
-                    setSettings({
-                        ...demoSettings,
-                        ...data.settings,
-                    });
-                    setSections(data.sections || demoSections);
-                    setIsLoading(false);
-                    return;
+                    // Validate data structure
+                    if (data?.company?.name && data?.settings) {
+                        setCompany({
+                            ...demoCompany,
+                            name: data.company.name || 'Untitled',
+                            tagline: data.company.tagline || '',
+                            logo_url: data.company.logo_url || '',
+                            banner_url: data.company.banner_url || '',
+                        });
+                        setSettings({
+                            ...demoSettings,
+                            primary_color: data.settings.primary_color || '#6366F1',
+                            secondary_color: data.settings.secondary_color || '#4F46E5',
+                            accent_color: data.settings.accent_color || '#10B981',
+                        });
+                        if (data.sections && Array.isArray(data.sections)) {
+                            setSections(data.sections);
+                        }
+                        setIsLoading(false);
+                        return;
+                    }
                 }
 
                 // Fall back to API
@@ -118,11 +125,17 @@ export default function PreviewPage() {
                                 <Link
                                     href={`/${companySlug}/edit`}
                                     className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                    aria-label="Back to edit page"
                                 >
                                     <ChevronLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                                 </Link>
                                 <div className="hidden sm:block">
-                                    <h1 className="font-semibold text-gray-900 dark:text-white">Preview Mode</h1>
+                                    <div className="flex items-center gap-2">
+                                        <h1 className="font-semibold text-gray-900 dark:text-white">Preview Mode</h1>
+                                        <span className="px-2 py-0.5 text-xs font-mono bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-md">
+                                            /{companySlug}
+                                        </span>
+                                    </div>
                                     <p className="text-xs text-gray-500 dark:text-gray-400">{company.name} Careers Page</p>
                                 </div>
                             </div>
