@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ApplyButton } from './ApplyButton';
 
 export function StickyApply({ title, companyName }: { title: string; companyName: string }) {
     const [isVisible, setIsVisible] = useState(false);
@@ -36,10 +37,12 @@ export function StickyApply({ title, companyName }: { title: string; companyName
                             <h3 className="font-semibold text-gray-900 dark:text-white truncate">{title}</h3>
                             <p className="text-sm text-gray-500 truncate">{companyName}</p>
                         </div>
-                        <Button className="flex-1 sm:flex-none w-full sm:w-auto shadow-indigo-500/25 shadow-lg" size="lg">
-                            Apply Now
-                            <ExternalLink className="h-4 w-4 ml-2" />
-                        </Button>
+                        <ApplyButton
+                            jobTitle={title}
+                            companyName={companyName}
+                            description="Apply Now"
+                            className="flex-1 sm:flex-none w-full sm:w-auto shadow-indigo-500/25 shadow-lg"
+                        />
                     </div>
                 </motion.div>
             )}

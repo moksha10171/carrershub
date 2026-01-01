@@ -11,7 +11,7 @@ import {
     Palette, Image, Type, Video, GripVertical, Plus, Trash2, Eye,
     Save, ChevronLeft, Check, AlertCircle, Upload, Link as LinkIcon
 } from 'lucide-react';
-import { demoCompany, demoSettings, demoSections } from '@/lib/data';
+// import { demoCompany, demoSettings, demoSections } from '@/lib/data';
 import { createClient } from '@/lib/supabase/client';
 
 interface ContentSectionEdit {
@@ -54,27 +54,19 @@ export default function EditPage() {
 
     // Brand settings state
     const [brandSettings, setBrandSettings] = useState({
-        companyName: demoCompany.name,
-        tagline: demoCompany.tagline || '',
-        website: demoCompany.website || '',
-        primaryColor: demoSettings.primary_color,
-        secondaryColor: demoSettings.secondary_color,
-        accentColor: demoSettings.accent_color,
-        logoUrl: demoCompany.logo_url || '',
-        bannerUrl: demoCompany.banner_url || '',
-        cultureVideoUrl: demoSettings.culture_video_url || '',
+        companyName: '',
+        tagline: '',
+        website: '',
+        primaryColor: '#6366F1',
+        secondaryColor: '#4F46E5',
+        accentColor: '#10B981',
+        logoUrl: '',
+        bannerUrl: '',
+        cultureVideoUrl: '',
     });
 
     // Content sections state
-    const [sections, setSections] = useState<ContentSectionEdit[]>(
-        demoSections.map(s => ({
-            id: s.id,
-            title: s.title,
-            type: s.type,
-            content: s.content || '',
-            is_visible: s.is_visible,
-        }))
-    );
+    const [sections, setSections] = useState<ContentSectionEdit[]>([]);
 
     const [activeTab, setActiveTab] = useState<'branding' | 'content' | 'seo'>('branding');
     const [isSaving, setIsSaving] = useState(false);
@@ -109,37 +101,7 @@ export default function EditPage() {
             try {
                 if (!companySlug) return;
 
-                // For demo company, use LocalStorage/Demo data
-                if (companySlug === 'techcorp' || companySlug === demoCompany.slug) {
-                    const savedData = localStorage.getItem(`company_${companySlug}`);
-                    if (savedData) {
-                        try {
-                            const data = JSON.parse(savedData);
-                            if (data?.company?.name) {
-                                setBrandSettings({
-                                    companyName: data.company.name || 'Untitled Company',
-                                    tagline: data.company.tagline || '',
-                                    website: data.company.website || '',
-                                    primaryColor: data.settings?.primary_color || demoSettings.primary_color,
-                                    secondaryColor: data.settings?.secondary_color || demoSettings.secondary_color,
-                                    accentColor: data.settings?.accent_color || demoSettings.accent_color,
-                                    logoUrl: data.company.logo_url || '',
-                                    bannerUrl: data.company.banner_url || '',
-                                    cultureVideoUrl: data.settings?.culture_video_url || '',
-                                });
-                                if (data.sections && Array.isArray(data.sections)) {
-                                    setSections(data.sections);
-                                }
-                                return;
-                            }
-                        } catch (e) {
-                            console.error('Failed to parse local demo data', e);
-                        }
-                    }
-                    // Fallback to static demo data if no local storage
-                    // (Already handled by initial state, but explicit check here if needed)
-                    return;
-                }
+                if (!companySlug) return;
 
                 // For real companies, ALWAYS fetch from API first to avoid stale data logic
                 const response = await fetch(`/api/companies?slug=${companySlug}`);
@@ -150,8 +112,9 @@ export default function EditPage() {
 
                     // Verify ownership (double check)
                     if (company.user_id !== user.id) {
-                        // Should be handled by middleware/API, but safe to check
+                        // Strict redirect for unauthorized users
                         console.error('Unauthorized access to company');
+                        router.replace('/dashboard');
                         return;
                     }
 
@@ -279,9 +242,6 @@ export default function EditPage() {
                     display_order: idx + 1,
                 })),
             };
-
-            // Save to LocalStorage
-            localStorage.setItem(`company_${companySlug}`, JSON.stringify(companyData));
 
             // Save to Backend
             const response = await fetch('/api/companies', {

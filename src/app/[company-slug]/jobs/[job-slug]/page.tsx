@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { JobActions } from './JobActions';
 import { StickyApply } from './StickyApply';
+import { ApplyButton } from './ApplyButton';
 
 interface JobPageProps {
     params: Promise<{ 'company-slug': string; 'job-slug': string }>;
@@ -176,10 +177,12 @@ export default async function JobPage({ params }: JobPageProps) {
 
                                 {/* Apply Button - Mobile */}
                                 <div className="lg:hidden">
-                                    <Button className="w-full" size="lg">
-                                        Apply for this position
-                                        <ExternalLink className="h-4 w-4" />
-                                    </Button>
+                                    <ApplyButton
+                                        jobTitle={job.title}
+                                        companyName={company.name}
+                                        description="Apply for this position"
+                                        className="w-full"
+                                    />
                                 </div>
                             </div>
 
@@ -202,10 +205,12 @@ export default async function JobPage({ params }: JobPageProps) {
                                 <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
                                     Interested in this role?
                                 </h3>
-                                <Button className="w-full mb-4" size="lg">
-                                    Apply Now
-                                    <ExternalLink className="h-4 w-4" />
-                                </Button>
+                                <ApplyButton
+                                    jobTitle={job.title}
+                                    companyName={company.name}
+                                    description="Apply Now"
+                                    className="w-full mb-4"
+                                />
                                 <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
                                     Application opens in external system
                                 </p>

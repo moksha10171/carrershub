@@ -8,8 +8,9 @@ import { Button } from '@/components/ui/Button';
 import {
     ChevronLeft, Edit, Share2, Smartphone, Monitor, Tablet, Copy, Check, ExternalLink
 } from 'lucide-react';
+
 import { HeroSection, JobListings, ContentSectionComponent } from '@/components/careers';
-import { getAllJobs, demoCompany, demoSettings, demoSections } from '@/lib/data';
+// import { getAllJobs, demoCompany, demoSettings, demoSections } from '@/lib/data';
 
 type DeviceMode = 'desktop' | 'tablet' | 'mobile';
 type Orientation = 'portrait' | 'landscape';
@@ -17,7 +18,7 @@ type Orientation = 'portrait' | 'landscape';
 export default function PreviewPage() {
     const params = useParams();
     const rawSlug = params['company-slug'] as string;
-    const companySlug = (rawSlug && rawSlug !== 'undefined' && rawSlug !== 'null') ? rawSlug : 'techcorp';
+    const companySlug = (rawSlug && rawSlug !== 'undefined' && rawSlug !== 'null') ? rawSlug : null;
 
     const [deviceMode, setDeviceMode] = useState<DeviceMode>('desktop');
     const [isFullscreen, setIsFullscreen] = useState(false);
@@ -25,48 +26,24 @@ export default function PreviewPage() {
     const [isLoading, setIsLoading] = useState(true);
 
     // Company data state
-    const [company, setCompany] = useState(demoCompany);
-    const [settings, setSettings] = useState(demoSettings);
-    const [sections, setSections] = useState(demoSections);
-    const [jobs, setJobs] = useState(getAllJobs(demoCompany.id));
+    // Company data state
+    const [company, setCompany] = useState<any>(null);
+    const [settings, setSettings] = useState<any>(null);
+    const [sections, setSections] = useState<any[]>([]);
+    const [jobs, setJobs] = useState<any[]>([]);
 
     // Fetch company data
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Try localStorage first (for recent edits)
-                const savedData = localStorage.getItem(`company_${companySlug}`);
-                if (savedData) {
-                    const data = JSON.parse(savedData);
-                    // Validate data structure
-                    if (data?.company?.name && data?.settings) {
-                        setCompany({
-                            ...demoCompany,
-                            name: data.company.name || 'Untitled',
-                            tagline: data.company.tagline || '',
-                            logo_url: data.company.logo_url || '',
-                            banner_url: data.company.banner_url || '',
-                        });
-                        setSettings({
-                            ...demoSettings,
-                            primary_color: data.settings.primary_color || '#6366F1',
-                            secondary_color: data.settings.secondary_color || '#4F46E5',
-                            accent_color: data.settings.accent_color || '#10B981',
-                        });
-                        if (data.sections && Array.isArray(data.sections)) {
-                            setSections(data.sections);
-                        }
-                        setIsLoading(false);
-                        return;
-                    }
-                }
+                if (!companySlug) return;
 
                 // Fall back to API
                 const response = await fetch(`/api/companies?slug=${companySlug}`);
                 const result = await response.json();
                 if (result.success && result.data) {
                     setCompany(result.data.company);
-                    setSettings(result.data.settings || demoSettings);
+                    setSettings(result.data.settings || {});
                     setSections(result.data.sections || []);
                     if (result.data.jobs) {
                         setJobs(result.data.jobs);

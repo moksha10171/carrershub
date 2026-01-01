@@ -135,9 +135,7 @@ export default function DashboardPage() {
                                     Create Your Careers Page
                                 </Button>
                             </Link>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-6">
-                                Or explore our <Link href="/techcorp/careers" className="text-indigo-600 dark:text-indigo-400 hover:underline">demo page</Link> first
-                            </p>
+
                         </motion.div>
                     </div>
                 </main>
@@ -166,13 +164,13 @@ export default function DashboardPage() {
                             </p>
                         </div>
                         <div className="flex gap-3">
-                            <Link href={`/${(company && company.slug) ? company.slug : 'techcorp'}/preview`}>
+                            <Link href={`/${company?.slug || ''}/preview`}>
                                 <Button variant="outline" size="sm">
                                     <Eye className="h-4 w-4" />
                                     Preview
                                 </Button>
                             </Link>
-                            <Link href={`/${(company && company.slug) ? company.slug : 'techcorp'}/edit`}>
+                            <Link href={`/${company?.slug || ''}/edit`}>
                                 <Button size="sm">
                                     <Edit className="h-4 w-4" />
                                     Edit Page
@@ -202,7 +200,7 @@ export default function DashboardPage() {
                                     {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                                     {copied ? 'Copied!' : 'Copy'}
                                 </Button>
-                                <Link href={`/${company?.slug || 'techcorp'}/careers`} target="_blank">
+                                <Link href={`/${company?.slug || ''}/careers`} target="_blank">
                                     <Button
                                         variant="secondary"
                                         size="sm"
@@ -351,12 +349,7 @@ export default function DashboardPage() {
                         </Card>
                     </div>
 
-                    {/* Demo Notice */}
-                    <div className="mt-8 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-                        <p className="text-sm text-amber-800 dark:text-amber-200 text-center">
-                            <strong>Demo Mode:</strong> This is a demonstration dashboard. In production, data would be fetched from Supabase.
-                        </p>
-                    </div>
+
                 </div>
             </main>
         </div>

@@ -1,5 +1,5 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { demoCompany, demoSettings, demoSections, getAllJobs, getJobBySlug } from '@/lib/data';
+// import { demoCompany, demoSettings, demoSections, getAllJobs, getJobBySlug } from '@/lib/data';
 
 // Shared types
 export interface CompanyData {
@@ -46,25 +46,18 @@ export async function getCompanyData(slug: string): Promise<CompanyData | null> 
 
             return {
                 company,
-                settings: settings || demoSettings,
+                settings: settings || {
+                    primary_color: '#6366F1',
+                    secondary_color: '#4F46E5',
+                    accent_color: '#10B981',
+                },
                 sections: sections || [],
                 jobs: jobs || [],
                 fromDatabase: true,
             };
         }
     } catch (error) {
-        console.warn('Supabase fetch failed, using demo data:', error);
-    }
-
-    // Fallback to demo data
-    if (slug === 'techcorp' || slug === demoCompany.slug) {
-        return {
-            company: demoCompany,
-            settings: demoSettings,
-            sections: demoSections.filter(s => s.is_visible).sort((a, b) => a.display_order - b.display_order),
-            jobs: getAllJobs(demoCompany.id, false),
-            fromDatabase: false,
-        };
+        console.warn('Supabase fetch failed:', error);
     }
 
     return null;
@@ -111,7 +104,11 @@ export async function getJobData(companySlug: string, jobSlug: string) {
                 return {
                     job,
                     company,
-                    settings: settings || demoSettings,
+                    settings: settings || {
+                        primary_color: '#6366F1',
+                        secondary_color: '#4F46E5',
+                        accent_color: '#10B981',
+                    },
                     relatedJobs: relatedJobs || [],
                     fromDatabase: true
                 };
@@ -119,25 +116,6 @@ export async function getJobData(companySlug: string, jobSlug: string) {
         }
     } catch (error) {
         console.warn('Supabase job fetch failed:', error);
-    }
-
-    // Fallback to demo data
-    if (companySlug === 'techcorp' || companySlug === demoCompany.slug) {
-        const job = getJobBySlug(jobSlug);
-        if (job) {
-            const allDemoJobs = getAllJobs(demoCompany.id, false);
-            const relatedJobs = allDemoJobs
-                .filter(j => j.slug !== jobSlug)
-                .slice(0, 3);
-
-            return {
-                job,
-                company: demoCompany,
-                settings: demoSettings,
-                relatedJobs,
-                fromDatabase: false
-            };
-        }
     }
 
     return null;
