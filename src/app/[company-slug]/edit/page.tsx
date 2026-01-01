@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { motion, Reorder } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -22,10 +22,19 @@ interface ContentSectionEdit {
     is_visible: boolean;
 }
 
-export default function EditPage({ params }: { params: { 'company-slug': string } }) {
-    const companySlug = params['company-slug'];
+export default function EditPage() {
+    const params = useParams();
+    const rawSlug = params['company-slug'] as string;
+    const companySlug = rawSlug === 'undefined' || rawSlug === 'null' ? null : rawSlug;
     const router = useRouter();
     const supabase = createClient();
+
+    // Redirect if slug is invalid
+    useEffect(() => {
+        if (!companySlug && typeof window !== 'undefined') {
+            router.replace('/dashboard');
+        }
+    }, [companySlug, router]);
     const [isAuthLoading, setIsAuthLoading] = useState(true);
     const [user, setUser] = useState<any>(null);
 
@@ -98,6 +107,8 @@ export default function EditPage({ params }: { params: { 'company-slug': string 
 
         const fetchData = async () => {
             try {
+                if (!companySlug) return;
+
                 // For demo company, use LocalStorage/Demo data
                 if (companySlug === 'techcorp' || companySlug === demoCompany.slug) {
                     const savedData = localStorage.getItem(`company_${companySlug}`);

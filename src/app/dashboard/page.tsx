@@ -83,7 +83,7 @@ export default function DashboardPage() {
     }, [company]);
 
     // Dynamic quick actions based on company
-    const quickActions = company ? [
+    const quickActions = (company && company.slug) ? [
         { label: 'Edit Branding', href: `/${company.slug}/edit`, icon: Palette, description: 'Colors, logo, banner' },
         { label: 'Preview Page', href: `/${company.slug}/preview`, icon: Eye, description: 'See how it looks' },
         { label: 'Edit Content', href: `/${company.slug}/edit?tab=content`, icon: Edit, description: 'About, Culture, Benefits' },
@@ -166,13 +166,13 @@ export default function DashboardPage() {
                             </p>
                         </div>
                         <div className="flex gap-3">
-                            <Link href={`/${company?.slug || 'techcorp'}/preview`}>
+                            <Link href={`/${(company && company.slug) ? company.slug : 'techcorp'}/preview`}>
                                 <Button variant="outline" size="sm">
                                     <Eye className="h-4 w-4" />
                                     Preview
                                 </Button>
                             </Link>
-                            <Link href={`/${company?.slug || 'techcorp'}/edit`}>
+                            <Link href={`/${(company && company.slug) ? company.slug : 'techcorp'}/edit`}>
                                 <Button size="sm">
                                     <Edit className="h-4 w-4" />
                                     Edit Page

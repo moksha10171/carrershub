@@ -16,7 +16,8 @@ type Orientation = 'portrait' | 'landscape';
 
 export default function PreviewPage() {
     const params = useParams();
-    const companySlug = params['company-slug'] as string || 'techcorp';
+    const rawSlug = params['company-slug'] as string;
+    const companySlug = (rawSlug && rawSlug !== 'undefined' && rawSlug !== 'null') ? rawSlug : 'techcorp';
 
     const [deviceMode, setDeviceMode] = useState<DeviceMode>('desktop');
     const [isFullscreen, setIsFullscreen] = useState(false);
