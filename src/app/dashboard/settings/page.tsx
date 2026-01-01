@@ -11,9 +11,12 @@ import Link from 'next/link';
 
 export default function SettingsPage() {
     const [user, setUser] = useState<any>(null);
+    const [fullName, setFullName] = useState('');
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState(false);
+    const [updatingName, setUpdatingName] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    const [nameMessage, setNameMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
     const [passwords, setPasswords] = useState({ new: '', confirm: '' });
     const router = useRouter();
     const supabase = createClient();
@@ -26,10 +29,38 @@ export default function SettingsPage() {
                 return;
             }
             setUser(user);
+            setFullName(user.user_metadata?.full_name || '');
             setLoading(false);
         };
         getUser();
     }, [router, supabase.auth]);
+
+    const handleNameUpdate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setNameMessage(null);
+
+        if (!fullName.trim()) {
+            setNameMessage({ type: 'error', text: 'Name cannot be empty.' });
+            return;
+        }
+
+        setUpdatingName(true);
+        try {
+            const { error } = await supabase.auth.updateUser({
+                data: { full_name: fullName }
+            });
+
+            if (error) throw error;
+
+            setNameMessage({ type: 'success', text: 'Name updated successfully.' });
+            // Update local user object
+            setUser({ ...user, user_metadata: { ...user.user_metadata, full_name: fullName } });
+        } catch (error: any) {
+            setNameMessage({ type: 'error', text: error.message || 'Failed to update name.' });
+        } finally {
+            setUpdatingName(false);
+        }
+    };
 
     const handlePasswordUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -102,7 +133,44 @@ export default function SettingsPage() {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div>
+                                <form onSubmit={handleNameUpdate} className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                            Full Name
+                                        </label>
+                                        <div className="relative">
+                                            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                            <Input
+                                                value={fullName}
+                                                onChange={(e) => setFullName(e.target.value)}
+                                                placeholder="Your full name"
+                                                className="pl-10"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {nameMessage && (
+                                        <div className={`p-3 rounded-md flex items-center gap-2 ${nameMessage.type === 'success'
+                                            ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                            : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                            }`}>
+                                            {nameMessage.type === 'success' ? (
+                                                <CheckCircle className="h-4 w-4" />
+                                            ) : (
+                                                <AlertCircle className="h-4 w-4" />
+                                            )}
+                                            <span className="text-sm">{nameMessage.text}</span>
+                                        </div>
+                                    )}
+
+                                    <div className="flex justify-end">
+                                        <Button type="submit" disabled={updatingName}>
+                                            {updatingName ? 'Updating...' : 'Update Name'}
+                                        </Button>
+                                    </div>
+                                </form>
+
+                                <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                         Email Address
                                     </label>
