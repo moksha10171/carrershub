@@ -72,6 +72,20 @@ export default function EditPage({ params }: { params: { 'company-slug': string 
     const [saveSuccess, setSaveSuccess] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
 
+    // Keyboard shortcuts (Ctrl+S to save)
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                if (hasChanges && !isSaving) {
+                    handleSave();
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [hasChanges, isSaving]);
+
     // Fetch data on mount - try LocalStorage first, then API
     useEffect(() => {
         if (!user) return; // Wait for auth check
@@ -243,8 +257,8 @@ export default function EditPage({ params }: { params: { 'company-slug': string 
                             </div>
                         </div>
                         <div className="flex gap-3">
-                            <Link href="/techcorp/preview">
-                                <Button variant="outline" size="sm">
+                            <Link href={`/${companySlug}/preview`}>
+                                <Button variant="outline" size="sm" aria-label="Preview careers page">
                                     <Eye className="h-4 w-4" />
                                     Preview
                                 </Button>
@@ -254,9 +268,11 @@ export default function EditPage({ params }: { params: { 'company-slug': string 
                                 onClick={handleSave}
                                 isLoading={isSaving}
                                 disabled={!hasChanges}
+                                aria-label={hasChanges ? 'Save changes (Ctrl+S)' : 'No changes to save'}
+                                title="Ctrl+S"
                             >
                                 {saveSuccess ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
-                                {saveSuccess ? 'Saved!' : 'Save Changes'}
+                                {saveSuccess ? 'Saved!' : 'Save'}
                             </Button>
                         </div>
                     </div>
@@ -274,12 +290,15 @@ export default function EditPage({ params }: { params: { 'company-slug': string 
                     )}
 
                     {/* Tabs */}
-                    <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700">
+                    <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700" role="tablist" aria-label="Editor tabs">
                         {tabs.map(tab => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.id
+                                role="tab"
+                                aria-selected={activeTab === tab.id}
+                                aria-controls={`panel-${tab.id}`}
+                                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 ${activeTab === tab.id
                                     ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
                                     : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                                     }`}
@@ -336,7 +355,7 @@ export default function EditPage({ params }: { params: { 'company-slug': string 
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
-                                    <div className="grid grid-cols-3 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                                                 Primary
@@ -507,25 +526,34 @@ export default function EditPage({ params }: { params: { 'company-slug': string 
                             >
                                 {sections.map((section) => (
                                     <Reorder.Item key={section.id} value={section}>
-                                        <Card className="cursor-move">
-                                            <CardContent className="p-4">
-                                                <div className="flex items-start gap-4">
-                                                    <div className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                                        <Card className="cursor-move hover:shadow-md transition-shadow">
+                                            <CardContent className="p-4 sm:p-6">
+                                                <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                                                    {/* Drag Handle */}
+                                                    <div
+                                                        className="hidden sm:flex p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-grab active:cursor-grabbing"
+                                                        title="Drag to reorder"
+                                                        aria-label="Drag to reorder section"
+                                                    >
                                                         <GripVertical className="h-5 w-5" />
                                                     </div>
 
+                                                    {/* Main Content */}
                                                     <div className="flex-1 space-y-4">
-                                                        <div className="flex items-center gap-4">
+                                                        {/* Header Row */}
+                                                        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                                                             <Input
                                                                 value={section.title}
                                                                 onChange={(e) => handleSectionChange(section.id, 'title', e.target.value)}
                                                                 placeholder="Section Title"
-                                                                className="font-medium"
+                                                                className="font-medium flex-1"
+                                                                aria-label="Section title"
                                                             />
                                                             <select
                                                                 value={section.type}
                                                                 onChange={(e) => handleSectionChange(section.id, 'type', e.target.value)}
-                                                                className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm"
+                                                                className="w-full sm:w-auto px-3 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-indigo-500"
+                                                                aria-label="Section type"
                                                             >
                                                                 <option value="about">About</option>
                                                                 <option value="culture">Culture</option>
@@ -536,17 +564,46 @@ export default function EditPage({ params }: { params: { 'company-slug': string 
                                                             </select>
                                                         </div>
 
-                                                        <textarea
-                                                            value={section.content}
-                                                            onChange={(e) => handleSectionChange(section.id, 'content', e.target.value)}
-                                                            placeholder="Section content (HTML supported)..."
-                                                            rows={4}
-                                                            className="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow resize-none font-mono text-sm"
-                                                        />
+                                                        {/* Content Textarea */}
+                                                        <div className="relative">
+                                                            <textarea
+                                                                value={section.content}
+                                                                onChange={(e) => handleSectionChange(section.id, 'content', e.target.value)}
+                                                                placeholder="Section content (HTML supported)..."
+                                                                rows={5}
+                                                                className="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow resize-y font-mono text-sm min-h-[120px]"
+                                                                aria-label="Section content"
+                                                            />
+                                                            <span className="absolute bottom-2 right-3 text-xs text-gray-400">
+                                                                {section.content.length} chars
+                                                            </span>
+                                                        </div>
+
+                                                        {/* Mobile Controls Row */}
+                                                        <div className="flex items-center justify-between sm:hidden">
+                                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={section.is_visible}
+                                                                    onChange={(e) => handleSectionChange(section.id, 'is_visible', e.target.checked)}
+                                                                    className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                                                />
+                                                                <span className="text-sm text-gray-600 dark:text-gray-400">Visible</span>
+                                                            </label>
+                                                            <button
+                                                                onClick={() => removeSection(section.id)}
+                                                                className="p-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                                                                aria-label="Delete section"
+                                                                title="Delete section"
+                                                            >
+                                                                <Trash2 className="h-5 w-5" />
+                                                            </button>
+                                                        </div>
                                                     </div>
 
-                                                    <div className="flex flex-col gap-2">
-                                                        <label className="flex items-center gap-2 cursor-pointer">
+                                                    {/* Desktop Controls */}
+                                                    <div className="hidden sm:flex flex-col gap-2">
+                                                        <label className="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg">
                                                             <input
                                                                 type="checkbox"
                                                                 checked={section.is_visible}
@@ -557,7 +614,9 @@ export default function EditPage({ params }: { params: { 'company-slug': string 
                                                         </label>
                                                         <button
                                                             onClick={() => removeSection(section.id)}
-                                                            className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                                            className="p-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                                                            aria-label="Delete section"
+                                                            title="Delete section"
                                                         >
                                                             <Trash2 className="h-4 w-4" />
                                                         </button>

@@ -221,7 +221,7 @@ export const demoCompany: Company = {
   user_id: 'demo-user',
   name: 'TechCorp',
   slug: 'techcorp',
-  logo_url: '/logo.svg',
+  logo_url: '/techcorp-logo.png',
   banner_url: '/images/hero-bg.png',
   website: 'https://techcorp.example.com',
   tagline: 'Building the future of technology, together. Join our global team of innovators and problem-solvers.',

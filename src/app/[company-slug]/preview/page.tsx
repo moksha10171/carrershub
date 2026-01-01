@@ -175,7 +175,7 @@ export default function PreviewPage() {
             )}
 
             {/* Preview Frame */}
-            <div className={`pt-16 pb-8 ${isFullscreen ? 'pt-0' : ''}`}>
+            <div className={`pt-16 pb-16 ${isFullscreen ? 'pt-0 pb-0' : ''}`}>
                 <div className="flex justify-center px-4">
                     <motion.div
                         layout
