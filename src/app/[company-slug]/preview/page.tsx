@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import {
@@ -13,16 +14,67 @@ import { getAllJobs, demoCompany, demoSettings, demoSections } from '@/lib/data'
 type DeviceMode = 'desktop' | 'tablet' | 'mobile';
 
 export default function PreviewPage() {
+    const params = useParams();
+    const companySlug = params['company-slug'] as string || 'techcorp';
+
     const [deviceMode, setDeviceMode] = useState<DeviceMode>('desktop');
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const company = demoCompany;
-    const settings = demoSettings;
-    const sections = demoSections;
-    const jobs = getAllJobs(company.id);
+    // Company data state
+    const [company, setCompany] = useState(demoCompany);
+    const [settings, setSettings] = useState(demoSettings);
+    const [sections, setSections] = useState(demoSections);
+    const [jobs, setJobs] = useState(getAllJobs(demoCompany.id));
 
-    const publicUrl = `https://careerhub.app/${company.slug}/careers`;
+    // Fetch company data
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                // Try localStorage first (for recent edits)
+                const savedData = localStorage.getItem(`company_${companySlug}`);
+                if (savedData) {
+                    const data = JSON.parse(savedData);
+                    setCompany({
+                        ...demoCompany,
+                        name: data.company.name,
+                        tagline: data.company.tagline,
+                        logo_url: data.company.logo_url,
+                        banner_url: data.company.banner_url,
+                    });
+                    setSettings({
+                        ...demoSettings,
+                        ...data.settings,
+                    });
+                    setSections(data.sections || demoSections);
+                    setIsLoading(false);
+                    return;
+                }
+
+                // Fall back to API
+                const response = await fetch(`/api/companies?slug=${companySlug}`);
+                const result = await response.json();
+                if (result.success && result.data) {
+                    setCompany(result.data.company);
+                    setSettings(result.data.settings || demoSettings);
+                    setSections(result.data.sections || []);
+                    if (result.data.jobs) {
+                        setJobs(result.data.jobs);
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to fetch preview data:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchData();
+    }, [companySlug]);
+
+    const publicUrl = typeof window !== 'undefined'
+        ? `${window.location.origin}/${companySlug}/careers`
+        : `/${companySlug}/careers`;
 
     const copyLink = () => {
         navigator.clipboard.writeText(publicUrl);
@@ -42,6 +94,14 @@ export default function PreviewPage() {
         mobile: <Smartphone className="h-4 w-4" />,
     };
 
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
             {/* Preview Toolbar */}
@@ -56,7 +116,7 @@ export default function PreviewPage() {
                             {/* Left - Back & Title */}
                             <div className="flex items-center gap-3">
                                 <Link
-                                    href="/techcorp/edit"
+                                    href={`/${companySlug}/edit`}
                                     className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                                 >
                                     <ChevronLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
@@ -74,8 +134,8 @@ export default function PreviewPage() {
                                         key={mode}
                                         onClick={() => setDeviceMode(mode)}
                                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${deviceMode === mode
-                                                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                                            ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                                             }`}
                                         aria-label={`${mode} view`}
                                     >
@@ -96,13 +156,13 @@ export default function PreviewPage() {
                                     {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
                                     {copied ? 'Copied!' : 'Copy Link'}
                                 </Button>
-                                <Link href="/techcorp/edit">
+                                <Link href={`/${companySlug}/edit`}>
                                     <Button variant="outline" size="sm">
                                         <Edit className="h-4 w-4" />
                                         <span className="hidden sm:inline">Edit</span>
                                     </Button>
                                 </Link>
-                                <Link href="/techcorp/careers" target="_blank">
+                                <Link href={`/${companySlug}/careers`} target="_blank">
                                     <Button size="sm">
                                         <ExternalLink className="h-4 w-4" />
                                         <span className="hidden sm:inline">Publish</span>
@@ -190,7 +250,7 @@ export default function PreviewPage() {
                     <span className="hidden sm:inline">
                         This is a preview of your careers page.
                     </span>
-                    <Link href="/techcorp/careers" className="underline hover:no-underline ml-1">
+                    <Link href={`/${companySlug}/careers`} className="underline hover:no-underline ml-1">
                         View live page →
                     </Link>
                 </div>

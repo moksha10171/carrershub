@@ -68,21 +68,14 @@ export default function EditPage({ params }: { params: { 'company-slug': string 
     );
 
     const [activeTab, setActiveTab] = useState<'branding' | 'content' | 'seo'>('branding');
-
-    // Show loading state while checking auth
-    if (isAuthLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-            </div>
-        );
-    }
     const [isSaving, setIsSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
 
     // Fetch data on mount - try LocalStorage first, then API
-    React.useEffect(() => {
+    useEffect(() => {
+        if (!user) return; // Wait for auth check
+
         const fetchData = async () => {
             try {
                 // Check LocalStorage first
@@ -220,6 +213,15 @@ export default function EditPage({ params }: { params: { 'company-slug': string 
         { id: 'branding', label: 'Branding', icon: Palette },
         { id: 'content', label: 'Content', icon: Type },
     ];
+
+    // Show loading state while checking auth
+    if (isAuthLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
