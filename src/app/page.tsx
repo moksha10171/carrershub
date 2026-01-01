@@ -2,23 +2,33 @@
 
 import React from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 import { Briefcase, Sparkles, ArrowRight, CheckCircle2, Palette, Filter, Zap, Share2, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+
+// Dynamically import Three.js background to avoid SSR issues
+const InteractiveBackground = dynamic(
+    () => import('@/components/three/InteractiveBackground'),
+    { ssr: false }
+);
 
 export default function HomePage() {
     return (
         <div className="min-h-screen bg-white dark:bg-gray-950">
             {/* Hero Section */}
             <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden px-4 sm:px-6 lg:px-8 pt-20">
+                {/* Three.js Interactive Particle Background */}
+                <InteractiveBackground />
+
                 {/* Background Image with Overlay */}
-                <div className="absolute inset-0 z-0">
+                <div className="absolute inset-0 z-0 pointer-events-none">
                     <img
                         src="/images/hero-bg.png"
                         alt="Background"
-                        className="w-full h-full object-cover opacity-40 dark:opacity-20"
+                        className="w-full h-full object-cover opacity-20 dark:opacity-10"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-white/80 to-white dark:from-gray-950/20 dark:via-gray-950/80 dark:to-gray-950" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-white/60 to-white dark:from-gray-950/10 dark:via-gray-950/60 dark:to-gray-950" />
                 </div>
 
                 <div className="relative z-10 max-w-6xl mx-auto text-center py-12 sm:py-16 lg:py-20">

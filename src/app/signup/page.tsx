@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react';
-import { useDemoAuth } from '@/lib/auth';
+import { createClient } from '@/lib/supabase/client';
 
 export default function SignupPage() {
     const [name, setName] = useState('');
@@ -20,7 +20,7 @@ export default function SignupPage() {
     const [success, setSuccess] = useState(false);
 
     const router = useRouter();
-    const { signUp } = useDemoAuth();
+    const supabase = createClient();
 
     const validateForm = () => {
         if (!name.trim()) {
@@ -54,21 +54,34 @@ export default function SignupPage() {
 
         setIsLoading(true);
 
-        const result = await signUp(email, password, name);
+        try {
+            const { error: signUpError } = await supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: {
+                        full_name: name,
+                    },
+                },
+            });
 
-        if (result.error) {
-            setError(result.error);
+            if (signUpError) {
+                setError(signUpError.message);
+                setIsLoading(false);
+                return;
+            }
+
+            setSuccess(true);
             setIsLoading(false);
-            return;
+
+            // Redirect to dashboard after a short delay
+            setTimeout(() => {
+                router.push('/dashboard');
+            }, 2000);
+        } catch (err) {
+            setError('An unexpected error occurred. Please try again.');
+            setIsLoading(false);
         }
-
-        setSuccess(true);
-        setIsLoading(false);
-
-        // Redirect to dashboard after a short delay
-        setTimeout(() => {
-            router.push('/dashboard');
-        }, 2000);
     };
 
     return (

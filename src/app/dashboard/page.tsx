@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
@@ -9,13 +10,7 @@ import {
     Briefcase, Users, Eye, Settings, Palette, Copy, Check,
     BarChart3, TrendingUp, Globe, ExternalLink, Edit, Plus
 } from 'lucide-react';
-
-const stats = [
-    { label: 'Open Positions', value: '150', icon: Briefcase, change: '+12 this month', color: 'indigo' },
-    { label: 'Page Views', value: '2.4K', icon: Eye, change: '+18% vs last week', color: 'green' },
-    { label: 'Applications', value: '89', icon: Users, change: '+23 this week', color: 'purple' },
-    { label: 'Locations', value: '12', icon: Globe, change: 'Worldwide', color: 'blue' },
-];
+import { createClient } from '@/lib/supabase/client';
 
 const quickActions = [
     { label: 'Edit Branding', href: '/techcorp/edit', icon: Palette, description: 'Colors, logo, banner' },
@@ -26,6 +21,11 @@ const quickActions = [
 
 export default function DashboardPage() {
     const [copied, setCopied] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [user, setUser] = useState<any>(null);
+    const router = useRouter();
+    const supabase = createClient();
+
     const [stats, setStats] = useState([
         { label: 'Open Positions', value: '0', icon: Briefcase, change: 'Fetching...', color: 'indigo' },
         { label: 'Page Views', value: '0', icon: Eye, change: 'Fetching...', color: 'green' },
@@ -34,7 +34,23 @@ export default function DashboardPage() {
     ]);
     const publicUrl = 'https://careerhub.app/techcorp/careers';
 
-    React.useEffect(() => {
+    // Check authentication
+    useEffect(() => {
+        const checkAuth = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                router.push('/login');
+                return;
+            }
+            setUser(user);
+            setIsLoading(false);
+        };
+        checkAuth();
+    }, [router, supabase.auth]);
+
+    useEffect(() => {
+        if (!user) return;
+
         const fetchStats = async () => {
             try {
                 const response = await fetch('/api/companies?slug=techcorp');
@@ -53,7 +69,16 @@ export default function DashboardPage() {
             }
         };
         fetchStats();
-    }, []);
+    }, [user]);
+
+    // Show loading state while checking auth
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+            </div>
+        );
+    }
 
     const copyToClipboard = () => {
         navigator.clipboard.writeText(publicUrl);

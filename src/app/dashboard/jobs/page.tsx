@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -11,6 +12,7 @@ import {
     CheckCircle, AlertCircle, Download, ChevronLeft, Search, Filter
 } from 'lucide-react';
 import { getAllJobs, demoCompany } from '@/lib/data';
+import { createClient } from '@/lib/supabase/client';
 import type { Job } from '@/types';
 
 interface ParsedJob {
@@ -27,6 +29,11 @@ interface ParsedJob {
 export default function JobsManagementPage() {
     const [jobs, setJobs] = useState<Job[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isAuthLoading, setIsAuthLoading] = useState(true);
+    const [user, setUser] = useState<any>(null);
+    const router = useRouter();
+    const supabase = createClient();
+
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedDepartment, setSelectedDepartment] = useState('');
     const [isUploading, setIsUploading] = useState(false);
@@ -37,8 +44,24 @@ export default function JobsManagementPage() {
     const [showAddModal, setShowAddModal] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Fetch jobs on mount
-    React.useEffect(() => {
+    // Check authentication
+    useEffect(() => {
+        const checkAuth = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                router.push('/login');
+                return;
+            }
+            setUser(user);
+            setIsAuthLoading(false);
+        };
+        checkAuth();
+    }, [router, supabase.auth]);
+
+    // Fetch jobs on mount (after auth check)
+    useEffect(() => {
+        if (!user) return;
+
         const fetchJobs = async () => {
             try {
                 const response = await fetch('/api/jobs');
@@ -51,7 +74,16 @@ export default function JobsManagementPage() {
             }
         };
         fetchJobs();
-    }, []);
+    }, [user]);
+
+    // Show loading state while checking auth
+    if (isAuthLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+            </div>
+        );
+    }
 
     // Get unique departments
     const departments = Array.from(new Set(jobs.map(j => j.department))).sort();

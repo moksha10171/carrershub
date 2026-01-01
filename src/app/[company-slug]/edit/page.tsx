@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, Reorder } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -11,6 +12,7 @@ import {
     Save, ChevronLeft, Check, AlertCircle, Upload, Link as LinkIcon
 } from 'lucide-react';
 import { demoCompany, demoSettings, demoSections } from '@/lib/data';
+import { createClient } from '@/lib/supabase/client';
 
 interface ContentSectionEdit {
     id: string;
@@ -22,6 +24,24 @@ interface ContentSectionEdit {
 
 export default function EditPage({ params }: { params: { 'company-slug': string } }) {
     const companySlug = params['company-slug'];
+    const router = useRouter();
+    const supabase = createClient();
+    const [isAuthLoading, setIsAuthLoading] = useState(true);
+    const [user, setUser] = useState<any>(null);
+
+    // Check authentication on mount
+    useEffect(() => {
+        const checkAuth = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                router.push('/login');
+                return;
+            }
+            setUser(user);
+            setIsAuthLoading(false);
+        };
+        checkAuth();
+    }, [router, supabase.auth]);
 
     // Brand settings state
     const [brandSettings, setBrandSettings] = useState({
@@ -48,6 +68,15 @@ export default function EditPage({ params }: { params: { 'company-slug': string 
     );
 
     const [activeTab, setActiveTab] = useState<'branding' | 'content' | 'seo'>('branding');
+
+    // Show loading state while checking auth
+    if (isAuthLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+            </div>
+        );
+    }
     const [isSaving, setIsSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);

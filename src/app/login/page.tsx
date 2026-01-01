@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
-import { useDemoAuth } from '@/lib/auth';
+import { createClient } from '@/lib/supabase/client';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -17,7 +17,7 @@ export default function LoginPage() {
     const [error, setError] = useState('');
 
     const router = useRouter();
-    const { signIn } = useDemoAuth();
+    const supabase = createClient();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -30,16 +30,24 @@ export default function LoginPage() {
 
         setIsLoading(true);
 
-        const result = await signIn(email, password);
+        try {
+            const { error: signInError } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
 
-        if (result.error) {
-            setError(result.error);
+            if (signInError) {
+                setError(signInError.message);
+                setIsLoading(false);
+                return;
+            }
+
+            // Redirect to dashboard
+            router.push('/dashboard');
+        } catch (err) {
+            setError('An unexpected error occurred. Please try again.');
             setIsLoading(false);
-            return;
         }
-
-        // Redirect to dashboard
-        router.push('/dashboard');
     };
 
     return (
