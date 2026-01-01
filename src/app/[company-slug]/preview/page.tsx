@@ -12,6 +12,7 @@ import { HeroSection, JobListings, ContentSectionComponent } from '@/components/
 import { getAllJobs, demoCompany, demoSettings, demoSections } from '@/lib/data';
 
 type DeviceMode = 'desktop' | 'tablet' | 'mobile';
+type Orientation = 'portrait' | 'landscape';
 
 export default function PreviewPage() {
     const params = useParams();
@@ -89,10 +90,22 @@ export default function PreviewPage() {
         setTimeout(() => setCopied(false), 2000);
     };
 
+    const [orientation, setOrientation] = useState<Orientation>('portrait');
+
+    const toggleOrientation = () => {
+        setOrientation(prev => prev === 'portrait' ? 'landscape' : 'portrait');
+    };
+
     const deviceWidths: Record<DeviceMode, string> = {
         desktop: '100%',
-        tablet: '768px',
-        mobile: '375px',
+        tablet: orientation === 'portrait' ? '768px' : '1024px',
+        mobile: orientation === 'portrait' ? '375px' : '700px', // Wider mobile landscape
+    };
+
+    const deviceHeights: Record<DeviceMode, string> = {
+        desktop: '100%',
+        tablet: orientation === 'portrait' ? '1024px' : '768px',
+        mobile: orientation === 'portrait' ? '800px' : '375px',
     };
 
     const deviceIcons: Record<DeviceMode, React.ReactNode> = {
@@ -141,21 +154,31 @@ export default function PreviewPage() {
                             </div>
 
                             {/* Center - Device Toggle */}
-                            <div className="flex items-center bg-gray-100 dark:bg-gray-700/50 rounded-lg p-1">
-                                {(['desktop', 'tablet', 'mobile'] as DeviceMode[]).map((mode) => (
-                                    <button
-                                        key={mode}
-                                        onClick={() => setDeviceMode(mode)}
-                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${deviceMode === mode
-                                            ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                                            : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
-                                            }`}
-                                        aria-label={`${mode} view`}
-                                    >
-                                        {deviceIcons[mode]}
-                                        <span className="hidden sm:inline capitalize">{mode}</span>
-                                    </button>
-                                ))}
+                            <div className="flex items-center gap-2">
+                                <div className="flex items-center bg-gray-100 dark:bg-gray-700/50 rounded-lg p-1">
+                                    {(['desktop', 'tablet', 'mobile'] as DeviceMode[]).map((mode) => (
+                                        <button
+                                            key={mode}
+                                            onClick={() => setDeviceMode(mode)}
+                                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${deviceMode === mode
+                                                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                                                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                                                }`}
+                                            aria-label={`${mode} view`}
+                                        >
+                                            {deviceIcons[mode]}
+                                            <span className="hidden sm:inline capitalize">{mode}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="h-6 w-px bg-gray-200 dark:bg-gray-700 mx-1" />
+                                <button
+                                    onClick={toggleOrientation}
+                                    className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                                    title="Rotate Device"
+                                >
+                                    <Smartphone className={`h-4 w-4 transition-transform duration-300 ${orientation === 'landscape' ? 'rotate-90' : ''}`} />
+                                </button>
                             </div>
 
                             {/* Right - Actions */}
@@ -188,35 +211,36 @@ export default function PreviewPage() {
             )}
 
             {/* Preview Frame */}
-            <div className={`pt-16 pb-20 ${isFullscreen ? 'pt-0 pb-0' : ''}`}>
-                <div className="flex justify-center px-2 sm:px-4">
+            <div className={`pt-16 pb-20 flex justify-center items-start min-h-screen ${isFullscreen ? 'pt-0 pb-0' : ''} transition-all duration-300`}>
+                <div className="relative" style={{ perspective: '1000px' }}>
                     <motion.div
                         layout
-                        className="bg-white dark:bg-gray-950 shadow-2xl overflow-hidden"
-                        style={{
+                        className="bg-white dark:bg-gray-950 shadow-2xl overflow-hidden relative"
+                        animate={{
                             width: deviceWidths[deviceMode],
-                            maxWidth: 'calc(100vw - 16px)',
-                            borderRadius: deviceMode === 'desktop' ? '0' : '24px',
-                            border: deviceMode !== 'desktop' ? '6px solid #1f2937' : 'none',
-                            transform: deviceMode === 'mobile' ? 'scale(0.9)' : deviceMode === 'tablet' ? 'scale(0.95)' : 'none',
-                            transformOrigin: 'top center',
+                            height: deviceMode === 'desktop' ? '100%' : deviceHeights[deviceMode],
+                            borderRadius: deviceMode === 'desktop' ? '0' : '30px',
+                            borderWidth: deviceMode !== 'desktop' ? '12px' : '0',
+                            borderColor: '#1f2937',
                         }}
-                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                        style={{
+                            maxWidth: '100vw',
+                            margin: '0 auto',
+                        }}
+                        transition={{ type: 'spring', stiffness: 200, damping: 25 }}
                     >
-                        {/* Device Frame Header (for mobile/tablet) */}
+                        {/* Device Notch/Camera (Visual Only) */}
                         {deviceMode !== 'desktop' && (
-                            <div className="bg-gray-800 h-5 flex items-center justify-center">
-                                <div className="w-12 h-1 bg-gray-600 rounded-full" />
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 h-6 w-32 bg-gray-900 rounded-b-xl z-50 flex items-center justify-center">
+                                <div className="w-16 h-1 bg-gray-800 rounded-full" />
                             </div>
                         )}
 
                         {/* Actual Page Content */}
                         <div
-                            className="overflow-y-auto overflow-x-hidden"
+                            className="w-full h-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600"
                             style={{
-                                height: deviceMode === 'desktop' ? 'auto' : '70vh',
-                                maxHeight: deviceMode === 'desktop' ? 'none' : '600px',
-                                minHeight: deviceMode === 'desktop' ? '100vh' : 'auto',
+                                height: '100%',
                             }}
                         >
                             {/* Hero Section */}
@@ -237,11 +261,13 @@ export default function PreviewPage() {
                                     <ContentSectionComponent key={section.id} section={section} index={index} />
                                 ))}
 
-                            {/* Job Listings */}
-                            <JobListings jobs={jobs} />
+                            {/* Job Listings (Wrapped to ensure it doesn't break layout) */}
+                            <div className="w-full max-w-full overflow-hidden">
+                                <JobListings jobs={jobs} />
+                            </div>
 
                             {/* Footer */}
-                            <footer className="py-6 bg-gray-100 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+                            <footer className="py-8 bg-gray-100 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
                                 <div className="container mx-auto px-4 text-center">
                                     <p className="text-gray-600 dark:text-gray-400 text-sm">
                                         © {new Date().getFullYear()} {company.name}. All rights reserved.
@@ -249,13 +275,6 @@ export default function PreviewPage() {
                                 </div>
                             </footer>
                         </div>
-
-                        {/* Device Frame Footer (for mobile/tablet) */}
-                        {deviceMode !== 'desktop' && (
-                            <div className="bg-gray-800 h-4 flex items-center justify-center">
-                                <div className="w-16 h-1 bg-gray-600 rounded-full" />
-                            </div>
-                        )}
                     </motion.div>
                 </div>
             </div>

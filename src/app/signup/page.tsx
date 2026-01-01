@@ -211,7 +211,7 @@ export default function SignupPage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-indigo-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
-            <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-20 pb-12">
+            <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-24 pb-12">
                 <div className="w-full max-w-md">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -266,7 +266,7 @@ export default function SignupPage() {
 
                                 {/* OTP Input */}
                                 <form onSubmit={handleVerifyOtp} className="space-y-6">
-                                    <div className="flex justify-center gap-2" onPaste={handleOtpPaste}>
+                                    <div className="flex justify-center gap-1 sm:gap-2" onPaste={handleOtpPaste}>
                                         {otp.map((digit, index) => (
                                             <input
                                                 key={index}
@@ -277,7 +277,7 @@ export default function SignupPage() {
                                                 value={digit}
                                                 onChange={(e) => handleOtpChange(index, e.target.value)}
                                                 onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                                                className="w-12 h-14 text-center text-2xl font-bold rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                                                className="w-10 h-12 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-bold rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
                                             />
                                         ))}
                                     </div>

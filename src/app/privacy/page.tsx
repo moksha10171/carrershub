@@ -30,7 +30,7 @@ export default function PrivacyPage() {
             {/* Content */}
             <section className="py-12 sm:py-16">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="max-w-3xl mx-auto prose prose-lg dark:prose-invert">
+                    <div className="max-w-3xl mx-auto prose prose-base sm:prose-lg dark:prose-invert">
 
                         <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-6 mb-8 not-prose">
                             <p className="text-blue-800 dark:text-blue-200 text-sm leading-relaxed">

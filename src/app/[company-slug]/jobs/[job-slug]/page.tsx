@@ -5,8 +5,10 @@ import { Button } from '@/components/ui/Button';
 import { getJobData } from '@/lib/api/companies';
 import {
     MapPin, Briefcase, Clock, DollarSign, Calendar, Building2,
-    ChevronLeft, Share2, Bookmark, ExternalLink, CheckCircle
+    ChevronLeft, ExternalLink
 } from 'lucide-react';
+import { JobActions } from './JobActions';
+import { StickyApply } from './StickyApply';
 
 interface JobPageProps {
     params: Promise<{ 'company-slug': string; 'job-slug': string }>;
@@ -47,7 +49,7 @@ export default async function JobPage({ params }: JobPageProps) {
         notFound();
     }
 
-    const { job, company, settings } = data;
+    const { job, company, settings, relatedJobs } = data;
 
     // Format posted date
     const postedDate = new Date(job.posted_at);
@@ -57,12 +59,49 @@ export default async function JobPage({ params }: JobPageProps) {
         day: 'numeric',
     });
 
-    // Similar jobs would ideally be fetched from DB too
-    // For now, let's keep it simple or implement a full list fetch if needed
-    const similarJobs: any[] = []; // We can add fetching logic if company has more jobs
+    const jobSchema = {
+        '@context': 'https://schema.org',
+        '@type': 'JobPosting',
+        title: job.title,
+        description: job.description,
+        identifier: {
+            '@type': 'PropertyValue',
+            name: company.name,
+            value: job.id,
+        },
+        datePosted: job.posted_at,
+        validThrough: new Date(new Date().setMonth(new Date().getMonth() + 3)).toISOString(),
+        employmentType: job.employment_type.toUpperCase().replace(' ', '_'),
+        hiringOrganization: {
+            '@type': 'Organization',
+            name: company.name,
+            sameAs: company.website,
+            logo: company.logo_url,
+        },
+        jobLocation: {
+            '@type': 'Place',
+            address: {
+                '@type': 'PostalAddress',
+                addressLocality: job.location,
+            },
+        },
+        baseSalary: job.salary_range ? {
+            '@type': 'MonetaryAmount',
+            currency: 'USD',
+            value: {
+                '@type': 'QuantitativeValue',
+                value: job.salary_range, // Best effort, strictly should be numeric
+            }
+        } : undefined,
+    };
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(jobSchema) }}
+            />
+            <StickyApply title={job.title} companyName={company.name} />
             <main className="pt-20 pb-16">
                 {/* Breadcrumb */}
                 <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
@@ -94,14 +133,10 @@ export default async function JobPage({ params }: JobPageProps) {
                                             {company.name}
                                         </p>
                                     </div>
-                                    <div className="flex gap-2">
-                                        <Button variant="outline" size="sm" aria-label="Save job">
-                                            <Bookmark className="h-4 w-4" />
-                                        </Button>
-                                        <Button variant="outline" size="sm" aria-label="Share job">
-                                            <Share2 className="h-4 w-4" />
-                                        </Button>
-                                    </div>
+                                    <JobActions
+                                        jobTitle={`${job.title} at ${company.name}`}
+                                        jobUrl={`https://whitecarrot.com/${companySlug}/jobs/${jobSlug}`}
+                                    />
                                 </div>
 
                                 {/* Job Meta */}
@@ -227,13 +262,13 @@ export default async function JobPage({ params }: JobPageProps) {
                             </div>
 
                             {/* Similar Jobs */}
-                            {similarJobs.length > 0 && (
+                            {relatedJobs && relatedJobs.length > 0 && (
                                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                                     <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
                                         Similar Positions
                                     </h3>
                                     <div className="space-y-3">
-                                        {similarJobs.map(similarJob => (
+                                        {relatedJobs.map((similarJob: any) => (
                                             <Link
                                                 key={similarJob.id}
                                                 href={`/${companySlug}/jobs/${similarJob.slug}`}
@@ -242,9 +277,15 @@ export default async function JobPage({ params }: JobPageProps) {
                                                 <p className="font-medium text-gray-900 dark:text-white text-sm">
                                                     {similarJob.title}
                                                 </p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                    {similarJob.location}
-                                                </p>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                                        <MapPin className="h-3 w-3" />
+                                                        {similarJob.location}
+                                                    </span>
+                                                    <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-300">
+                                                        {similarJob.employment_type}
+                                                    </span>
+                                                </div>
                                             </Link>
                                         ))}
                                     </div>

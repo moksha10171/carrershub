@@ -54,7 +54,7 @@ export default function LoginPage() {
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-indigo-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
 
 
-            <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-20 pb-12">
+            <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-24 pb-12">
                 <div className="w-full max-w-md">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}

@@ -70,7 +70,7 @@ export default function PricingPage() {
             {/* Pricing Cards */}
             <section className="py-16">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                    <div className="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
                         {plans.map((plan, idx) => (
                             <div
                                 key={idx}

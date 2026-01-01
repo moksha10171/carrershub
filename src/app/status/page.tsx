@@ -129,7 +129,7 @@ export default function StatusPage() {
                             {services.map((service, idx) => (
                                 <div
                                     key={idx}
-                                    className="flex items-center justify-between p-4 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                                    className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 gap-4"
                                 >
                                     <div className="flex items-center gap-3">
                                         <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0" />
@@ -137,7 +137,7 @@ export default function StatusPage() {
                                             {service.name}
                                         </span>
                                     </div>
-                                    <div className="flex items-center gap-6">
+                                    <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto">
                                         <div className="text-right hidden sm:block">
                                             <div className="text-sm text-gray-500 dark:text-gray-400">Response</div>
                                             <div className="text-sm font-medium text-gray-900 dark:text-white">{service.responseTime}</div>
@@ -212,8 +212,8 @@ export default function StatusPage() {
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <span className={`px-3 py-1 rounded-full text-xs font-medium ${incident.severity === 'low' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
-                                                    incident.severity === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' :
-                                                        'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                                                incident.severity === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' :
+                                                    'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
                                                 }`}>
                                                 {incident.severity}
                                             </span>

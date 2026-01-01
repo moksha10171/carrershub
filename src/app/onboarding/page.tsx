@@ -147,7 +147,7 @@ export default function OnboardingPage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-indigo-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
-            <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-20 pb-12">
+            <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-24 pb-12">
                 <div className="w-full max-w-lg">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -197,11 +197,14 @@ export default function OnboardingPage() {
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Your Careers Page URL
                                 </label>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-gray-500 dark:text-gray-400 text-sm whitespace-nowrap">
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                                    <span className="text-gray-500 dark:text-gray-400 text-sm whitespace-nowrap hidden sm:inline">
                                         careerhub.app/
                                     </span>
-                                    <div className="relative flex-1">
+                                    <span className="text-gray-500 dark:text-gray-400 text-sm whitespace-nowrap sm:hidden">
+                                        careerhub.app/
+                                    </span>
+                                    <div className="relative flex-1 w-full">
                                         <input
                                             type="text"
                                             value={slug}
@@ -221,7 +224,7 @@ export default function OnboardingPage() {
                                             </div>
                                         )}
                                     </div>
-                                    <span className="text-gray-500 dark:text-gray-400 text-sm">/careers</span>
+                                    <span className="text-gray-500 dark:text-gray-400 text-sm hidden sm:inline">/careers</span>
                                 </div>
                                 {slug.length >= 3 && !isCheckingSlug && (
                                     <p className={`text-xs mt-1 ${slugAvailable ? 'text-green-600' : 'text-red-600'}`}>

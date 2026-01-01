@@ -92,59 +92,81 @@ export default function EditPage({ params }: { params: { 'company-slug': string 
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
 
-    // Fetch data on mount - try LocalStorage first, then API
+    // Fetch data on mount
     useEffect(() => {
-        if (!user) return; // Wait for auth check
+        if (!user) return;
 
         const fetchData = async () => {
             try {
-                // Check LocalStorage first
-                const savedData = localStorage.getItem(`company_${companySlug}`);
-                if (savedData) {
-                    const data = JSON.parse(savedData);
-                    // Validate the data structure before using
-                    if (data?.company?.name && data?.settings) {
-                        setBrandSettings({
-                            companyName: data.company.name || 'Untitled Company',
-                            tagline: data.company.tagline || '',
-                            website: data.company.website || '',
-                            primaryColor: data.settings.primary_color || '#6366F1',
-                            secondaryColor: data.settings.secondary_color || '#4F46E5',
-                            accentColor: data.settings.accent_color || '#10B981',
-                            logoUrl: data.company.logo_url || '',
-                            bannerUrl: data.company.banner_url || '',
-                            cultureVideoUrl: data.settings.culture_video_url || '',
-                        });
-                        if (data.sections && Array.isArray(data.sections)) {
-                            setSections(data.sections);
+                // For demo company, use LocalStorage/Demo data
+                if (companySlug === 'techcorp' || companySlug === demoCompany.slug) {
+                    const savedData = localStorage.getItem(`company_${companySlug}`);
+                    if (savedData) {
+                        try {
+                            const data = JSON.parse(savedData);
+                            if (data?.company?.name) {
+                                setBrandSettings({
+                                    companyName: data.company.name || 'Untitled Company',
+                                    tagline: data.company.tagline || '',
+                                    website: data.company.website || '',
+                                    primaryColor: data.settings?.primary_color || demoSettings.primary_color,
+                                    secondaryColor: data.settings?.secondary_color || demoSettings.secondary_color,
+                                    accentColor: data.settings?.accent_color || demoSettings.accent_color,
+                                    logoUrl: data.company.logo_url || '',
+                                    bannerUrl: data.company.banner_url || '',
+                                    cultureVideoUrl: data.settings?.culture_video_url || '',
+                                });
+                                if (data.sections && Array.isArray(data.sections)) {
+                                    setSections(data.sections);
+                                }
+                                return;
+                            }
+                        } catch (e) {
+                            console.error('Failed to parse local demo data', e);
                         }
-                        return;
                     }
+                    // Fallback to static demo data if no local storage
+                    // (Already handled by initial state, but explicit check here if needed)
+                    return;
                 }
 
-                // Fallback to API/demo data
+                // For real companies, ALWAYS fetch from API first to avoid stale data logic
                 const response = await fetch(`/api/companies?slug=${companySlug}`);
                 const apiData = await response.json();
+
                 if (apiData.success && apiData.data) {
                     const { company, settings, sections: apiSections } = apiData.data;
+
+                    // Verify ownership (double check)
+                    if (company.user_id !== user.id) {
+                        // Should be handled by middleware/API, but safe to check
+                        console.error('Unauthorized access to company');
+                        return;
+                    }
+
                     setBrandSettings({
                         companyName: company.name,
                         tagline: company.tagline || '',
                         website: company.website || '',
-                        primaryColor: settings.primary_color,
-                        secondaryColor: settings.secondary_color,
-                        accentColor: settings.accent_color,
+                        primaryColor: settings?.primary_color || '#6366F1',
+                        secondaryColor: settings?.secondary_color || '#4F46E5',
+                        accentColor: settings?.accent_color || '#10B981',
                         logoUrl: company.logo_url || '',
                         bannerUrl: company.banner_url || '',
-                        cultureVideoUrl: settings.culture_video_url || '',
+                        cultureVideoUrl: settings?.culture_video_url || '',
                     });
-                    setSections(apiSections.map((s: any) => ({
-                        id: s.id,
-                        title: s.title,
-                        type: s.type,
-                        content: s.content || '',
-                        is_visible: s.is_visible,
-                    })));
+
+                    if (apiSections && Array.isArray(apiSections)) {
+                        setSections(apiSections.map((s: any) => ({
+                            id: s.id,
+                            title: s.title,
+                            type: s.type,
+                            content: s.content || '',
+                            is_visible: s.is_visible,
+                        })));
+                    }
+                } else {
+                    console.error('Failed to load company data:', apiData.error);
                 }
             } catch (error) {
                 console.error('Failed to fetch company data:', error);
@@ -152,6 +174,38 @@ export default function EditPage({ params }: { params: { 'company-slug': string 
         };
         fetchData();
     }, [companySlug, user]);
+
+    // Handle Image Upload
+    const handleImageUpload = async (file: File, field: 'logoUrl' | 'bannerUrl') => {
+        if (!user) return;
+
+        // Optimistic preview
+        const objectUrl = URL.createObjectURL(file);
+        handleBrandChange(field, objectUrl);
+
+        try {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${companySlug}-${field}-${Date.now()}.${fileExt}`;
+            const filePath = `${user.id}/${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('company-assets')
+                .upload(filePath, file);
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('company-assets')
+                .getPublicUrl(filePath);
+
+            // Update with real URL
+            handleBrandChange(field, publicUrl);
+        } catch (error) {
+            console.error('Upload failed:', error);
+            // Revert to original or show error (for now just keeping the objectUrl or empty)
+            // Ideally we'd show a toast here
+        }
+    };
 
     const handleBrandChange = (field: string, value: string) => {
         setBrandSettings({ ...brandSettings, [field]: value });
@@ -170,7 +224,16 @@ export default function EditPage({ params }: { params: { 'company-slug': string 
             id: `section-${Date.now()}`,
             title: 'New Section',
             type: 'custom',
-            content: '<p>Add your content here...</p>',
+            content: `<div class="flex flex-col md:flex-row items-center gap-8 py-8">
+  <div class="flex-1">
+    <h3>New Section</h3>
+    <p>Describe your section here...</p>
+  </div>
+  <div class="flex-1">
+     <!-- Replace with your image URL -->
+    <img src="https://placehold.co/600x400/e2e8f0/64748b?text=Image" alt="Placeholder" class="rounded-2xl shadow-lg w-full object-cover" />
+  </div>
+</div>`,
             is_visible: true,
         };
         setSections([...sections, newSection]);
@@ -230,8 +293,11 @@ export default function EditPage({ params }: { params: { 'company-slug': string 
             setTimeout(() => setSaveSuccess(false), 3000);
         } catch (error: any) {
             console.error('Failed to save changes:', error);
-            // Show error state (we could add a state for this)
-            alert(error.message || 'Failed to save changes. Please try again.');
+            // In a real app we'd use a toast system here
+            // For now, setting a temporary error state would be better than alert, 
+            // but for simple feedback let's stick to a clear console error or simple UI feedback if we had a slot.
+            // Let's add an error UI near the save button in the future.
+            alert(`Error: ${error.message || 'Failed to save changes'}`);
         } finally {
             setIsSaving(false);
         }
@@ -468,10 +534,32 @@ export default function EditPage({ params }: { params: { 'company-slug': string 
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                                                 Company Logo
                                             </label>
-                                            <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors cursor-pointer">
-                                                <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                                                <p className="text-sm text-gray-500">Click or drag to upload</p>
-                                                <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 2MB</p>
+                                            <div
+                                                className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors cursor-pointer relative overflow-hidden group"
+                                                onClick={() => document.getElementById('logo-upload')?.click()}
+                                            >
+                                                {brandSettings.logoUrl ? (
+                                                    <div className="flex flex-col items-center">
+                                                        <img src={brandSettings.logoUrl} alt="Logo preview" className="h-16 w-16 object-contain mb-2" />
+                                                        <p className="text-xs text-indigo-600 dark:text-indigo-400">Click to replace</p>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                                                        <p className="text-sm text-gray-500">Click or drag to upload</p>
+                                                        <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 2MB</p>
+                                                    </>
+                                                )}
+                                                <input
+                                                    id="logo-upload"
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) handleImageUpload(file, 'logoUrl');
+                                                    }}
+                                                />
                                             </div>
                                             <Input
                                                 placeholder="Or paste image URL..."
@@ -486,10 +574,32 @@ export default function EditPage({ params }: { params: { 'company-slug': string 
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                                                 Hero Banner
                                             </label>
-                                            <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors cursor-pointer">
-                                                <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                                                <p className="text-sm text-gray-500">1920x600 recommended</p>
-                                                <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 5MB</p>
+                                            <div
+                                                className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors cursor-pointer relative overflow-hidden group"
+                                                onClick={() => document.getElementById('banner-upload')?.click()}
+                                            >
+                                                {brandSettings.bannerUrl ? (
+                                                    <div className="flex flex-col items-center">
+                                                        <img src={brandSettings.bannerUrl} alt="Banner preview" className="h-20 w-full object-cover rounded mb-2 opacity-70" />
+                                                        <p className="text-xs text-indigo-600 dark:text-indigo-400">Click to replace</p>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                                                        <p className="text-sm text-gray-500">1920x600 recommended</p>
+                                                        <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 5MB</p>
+                                                    </>
+                                                )}
+                                                <input
+                                                    id="banner-upload"
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) handleImageUpload(file, 'bannerUrl');
+                                                    }}
+                                                />
                                             </div>
                                             <Input
                                                 placeholder="Or paste image URL..."
@@ -584,14 +694,67 @@ export default function EditPage({ params }: { params: { 'company-slug': string 
                                                             </select>
                                                         </div>
 
+                                                        {/* Templates / Snippets Toolbar */}
+                                                        <div className="flex gap-2 mb-2 overflow-x-auto pb-2">
+                                                            <button
+                                                                onClick={() => {
+                                                                    const template = `
+<div class="flex flex-col md:flex-row items-center gap-8 py-8">
+  <div class="flex-1">
+    <h3>Title Here</h3>
+    <p>Add your text here...</p>
+  </div>
+  <div class="flex-1">
+    <img src="https://via.placeholder.com/600x400" alt="Description" class="rounded-2xl shadow-lg w-full object-cover" />
+  </div>
+</div>`;
+                                                                    handleSectionChange(section.id, 'content', section.content + template);
+                                                                }}
+                                                                className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md whitespace-nowrap"
+                                                            >
+                                                                + Text Left / Img Right
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    const template = `
+<div class="flex flex-col md:flex-row-reverse items-center gap-8 py-8">
+  <div class="flex-1">
+    <h3>Title Here</h3>
+    <p>Add your text here...</p>
+  </div>
+  <div class="flex-1">
+    <img src="https://via.placeholder.com/600x400" alt="Description" class="rounded-2xl shadow-lg w-full object-cover" />
+  </div>
+</div>`;
+                                                                    handleSectionChange(section.id, 'content', section.content + template);
+                                                                }}
+                                                                className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md whitespace-nowrap"
+                                                            >
+                                                                + Img Left / Text Right
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    const template = `
+<div class="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-2xl mb-6">
+  <h3 class="mb-2">Highlight Box</h3>
+  <p class="mb-0">Important information goes here...</p>
+</div>`;
+                                                                    handleSectionChange(section.id, 'content', section.content + template);
+                                                                }}
+                                                                className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md whitespace-nowrap"
+                                                            >
+                                                                + Highlight Box
+                                                            </button>
+                                                        </div>
+
                                                         {/* Content Textarea */}
                                                         <div className="relative">
                                                             <textarea
                                                                 value={section.content}
                                                                 onChange={(e) => handleSectionChange(section.id, 'content', e.target.value)}
                                                                 placeholder="Section content (HTML supported)..."
-                                                                rows={5}
-                                                                className="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow resize-y font-mono text-sm min-h-[120px]"
+                                                                rows={8}
+                                                                className="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow resize-y font-mono text-sm min-h-[200px]"
                                                                 aria-label="Section content"
                                                             />
                                                             <span className="absolute bottom-2 right-3 text-xs text-gray-400">

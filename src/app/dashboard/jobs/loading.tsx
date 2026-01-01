@@ -5,7 +5,7 @@ export default function Loading() {
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
             <div className="h-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800"></div>
 
-            <main className="pt-20 pb-12">
+            <main className="pt-24 pb-12">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
                     {/* Header Skeleton */}
                     <div className="animate-pulse mb-6">

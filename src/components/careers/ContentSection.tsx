@@ -55,7 +55,12 @@ export function ContentSectionComponent({ section, index = 0 }: ContentSectionPr
                     {/* Content */}
                     {section.content && (
                         <motion.div
-                            className="text-gray-600 dark:text-gray-300"
+                            className="text-gray-600 dark:text-gray-300 prose prose-indigo dark:prose-invert max-w-none
+                                [&_img]:rounded-2xl [&_img]:shadow-lg [&_img]:w-full [&_img]:object-cover [&_img]:aspect-video
+                                [&_h3]:text-2xl [&_h3]:font-bold [&_h3]:text-gray-900 [&_h3]:dark:text-white [&_h3]:mb-4
+                                [&_p]:text-lg [&_p]:leading-relaxed [&_p]:mb-6
+                                [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-2 [&_ul]:mb-6
+                                [&_.flex]:flex-col [&_.flex]:md:flex-row [&_.flex]:gap-8 [&_.flex]:items-center"
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}

@@ -99,10 +99,20 @@ export async function getJobData(companySlug: string, jobSlug: string) {
                     .eq('company_id', company.id)
                     .single();
 
+                // Fetch related jobs (3 other active jobs from same company)
+                const { data: relatedJobs } = await supabase
+                    .from('jobs')
+                    .select('id, title, location, slug, employment_type')
+                    .eq('company_id', company.id)
+                    .eq('is_active', true)
+                    .neq('id', job.id) // Exclude current job
+                    .limit(3);
+
                 return {
                     job,
                     company,
                     settings: settings || demoSettings,
+                    relatedJobs: relatedJobs || [],
                     fromDatabase: true
                 };
             }
@@ -115,10 +125,16 @@ export async function getJobData(companySlug: string, jobSlug: string) {
     if (companySlug === 'techcorp' || companySlug === demoCompany.slug) {
         const job = getJobBySlug(jobSlug);
         if (job) {
+            const allDemoJobs = getAllJobs(demoCompany.id, false);
+            const relatedJobs = allDemoJobs
+                .filter(j => j.slug !== jobSlug)
+                .slice(0, 3);
+
             return {
                 job,
                 company: demoCompany,
                 settings: demoSettings,
+                relatedJobs,
                 fromDatabase: false
             };
         }
