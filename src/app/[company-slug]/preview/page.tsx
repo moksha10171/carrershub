@@ -103,7 +103,7 @@ export default function PreviewPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+        <div className="min-h-screen bg-gray-100 dark:bg-gray-900 overflow-x-hidden">
             {/* Preview Toolbar */}
             {!isFullscreen && (
                 <motion.div
@@ -128,14 +128,14 @@ export default function PreviewPage() {
                             </div>
 
                             {/* Center - Device Toggle */}
-                            <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                            <div className="flex items-center bg-gray-100 dark:bg-gray-700/50 rounded-lg p-1">
                                 {(['desktop', 'tablet', 'mobile'] as DeviceMode[]).map((mode) => (
                                     <button
                                         key={mode}
                                         onClick={() => setDeviceMode(mode)}
                                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${deviceMode === mode
                                             ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                                            : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
                                             }`}
                                         aria-label={`${mode} view`}
                                     >
@@ -175,31 +175,34 @@ export default function PreviewPage() {
             )}
 
             {/* Preview Frame */}
-            <div className={`pt-16 pb-16 ${isFullscreen ? 'pt-0 pb-0' : ''}`}>
-                <div className="flex justify-center px-4">
+            <div className={`pt-16 pb-20 ${isFullscreen ? 'pt-0 pb-0' : ''}`}>
+                <div className="flex justify-center px-2 sm:px-4">
                     <motion.div
                         layout
                         className="bg-white dark:bg-gray-950 shadow-2xl overflow-hidden"
                         style={{
                             width: deviceWidths[deviceMode],
-                            maxWidth: '100%',
+                            maxWidth: 'calc(100vw - 16px)',
                             borderRadius: deviceMode === 'desktop' ? '0' : '24px',
-                            border: deviceMode !== 'desktop' ? '8px solid #1f2937' : 'none',
+                            border: deviceMode !== 'desktop' ? '6px solid #1f2937' : 'none',
+                            transform: deviceMode === 'mobile' ? 'scale(0.9)' : deviceMode === 'tablet' ? 'scale(0.95)' : 'none',
+                            transformOrigin: 'top center',
                         }}
                         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                     >
                         {/* Device Frame Header (for mobile/tablet) */}
                         {deviceMode !== 'desktop' && (
-                            <div className="bg-gray-800 h-6 flex items-center justify-center">
-                                <div className="w-16 h-1 bg-gray-600 rounded-full" />
+                            <div className="bg-gray-800 h-5 flex items-center justify-center">
+                                <div className="w-12 h-1 bg-gray-600 rounded-full" />
                             </div>
                         )}
 
                         {/* Actual Page Content */}
                         <div
-                            className="overflow-auto"
+                            className="overflow-y-auto overflow-x-hidden"
                             style={{
-                                height: deviceMode === 'desktop' ? 'auto' : '80vh',
+                                height: deviceMode === 'desktop' ? 'auto' : '70vh',
+                                maxHeight: deviceMode === 'desktop' ? 'none' : '600px',
                                 minHeight: deviceMode === 'desktop' ? '100vh' : 'auto',
                             }}
                         >
@@ -225,7 +228,7 @@ export default function PreviewPage() {
                             <JobListings jobs={jobs} />
 
                             {/* Footer */}
-                            <footer className="py-8 bg-gray-100 dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800">
+                            <footer className="py-6 bg-gray-100 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
                                 <div className="container mx-auto px-4 text-center">
                                     <p className="text-gray-600 dark:text-gray-400 text-sm">
                                         © {new Date().getFullYear()} {company.name}. All rights reserved.
@@ -236,8 +239,8 @@ export default function PreviewPage() {
 
                         {/* Device Frame Footer (for mobile/tablet) */}
                         {deviceMode !== 'desktop' && (
-                            <div className="bg-gray-800 h-5 flex items-center justify-center">
-                                <div className="w-24 h-1 bg-gray-600 rounded-full" />
+                            <div className="bg-gray-800 h-4 flex items-center justify-center">
+                                <div className="w-16 h-1 bg-gray-600 rounded-full" />
                             </div>
                         )}
                     </motion.div>
@@ -245,16 +248,18 @@ export default function PreviewPage() {
             </div>
 
             {/* Preview Info Bar */}
-            {!isFullscreen && (
-                <div className="fixed bottom-0 left-0 right-0 bg-indigo-600 text-white py-2 px-4 text-center text-sm">
-                    <span className="hidden sm:inline">
-                        This is a preview of your careers page.
-                    </span>
-                    <Link href={`/${companySlug}/careers`} className="underline hover:no-underline ml-1">
-                        View live page →
-                    </Link>
-                </div>
-            )}
+            {
+                !isFullscreen && (
+                    <div className="fixed bottom-0 left-0 right-0 bg-indigo-600 text-white py-2 px-4 text-center text-sm">
+                        <span className="hidden sm:inline">
+                            This is a preview of your careers page.
+                        </span>
+                        <Link href={`/${companySlug}/careers`} className="underline hover:no-underline ml-1">
+                            View live page →
+                        </Link>
+                    </div>
+                )
+            }
         </div>
     );
 }
