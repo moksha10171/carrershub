@@ -1,68 +1,9 @@
 import { Metadata } from 'next';
 import { CareersPageClient } from './CareersPageClient';
-import { getAllJobs, demoCompany, demoSettings, demoSections } from '@/lib/data';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { getCompanyData } from '@/lib/api/companies';
 
 interface CareersPageProps {
     params: Promise<{ 'company-slug': string }>;
-}
-
-// Helper function to fetch company data from Supabase or fall back to demo
-async function getCompanyData(slug: string) {
-    try {
-        const supabase = await createServerSupabaseClient();
-
-        // Try to fetch from Supabase
-        const { data: company, error: companyError } = await supabase
-            .from('companies')
-            .select('*')
-            .eq('slug', slug)
-            .single();
-
-        if (company && !companyError) {
-            const { data: settings } = await supabase
-                .from('company_settings')
-                .select('*')
-                .eq('company_id', company.id)
-                .single();
-
-            const { data: sections } = await supabase
-                .from('content_sections')
-                .select('*')
-                .eq('company_id', company.id)
-                .eq('is_visible', true)
-                .order('display_order', { ascending: true });
-
-            const { data: jobs } = await supabase
-                .from('jobs')
-                .select('*')
-                .eq('company_id', company.id)
-                .eq('is_active', true);
-
-            return {
-                company,
-                settings: settings || demoSettings,
-                sections: sections || [],
-                jobs: jobs || [],
-                fromDatabase: true,
-            };
-        }
-    } catch (error) {
-        console.warn('Supabase fetch failed, using demo data:', error);
-    }
-
-    // Fallback to demo data
-    if (slug === 'techcorp' || slug === demoCompany.slug) {
-        return {
-            company: demoCompany,
-            settings: demoSettings,
-            sections: demoSections.filter(s => s.is_visible).sort((a, b) => a.display_order - b.display_order),
-            jobs: getAllJobs(demoCompany.id, false),
-            fromDatabase: false,
-        };
-    }
-
-    return null;
 }
 
 export async function generateMetadata({ params }: CareersPageProps): Promise<Metadata> {

@@ -209,8 +209,8 @@ export default function EditPage({ params }: { params: { 'company-slug': string 
             // Save to LocalStorage
             localStorage.setItem(`company_${companySlug}`, JSON.stringify(companyData));
 
-            // Optionally, also try to save to backend (will gracefully fail in demo mode)
-            await fetch('/api/companies', {
+            // Save to Backend
+            const response = await fetch('/api/companies', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -218,17 +218,20 @@ export default function EditPage({ params }: { params: { 'company-slug': string 
                     slug: companySlug,
                     ...companyData,
                 }),
-            }).catch(() => {
-                // Silently fail - we're in demo mode
-                console.log('Backend update skipped - demo mode');
             });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to sync with server');
+            }
 
             setSaveSuccess(true);
             setHasChanges(false);
             setTimeout(() => setSaveSuccess(false), 3000);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to save changes:', error);
-            alert('Failed to save changes. Please try again.');
+            // Show error state (we could add a state for this)
+            alert(error.message || 'Failed to save changes. Please try again.');
         } finally {
             setIsSaving(false);
         }

@@ -165,13 +165,13 @@ export default function DashboardPage() {
                             </p>
                         </div>
                         <div className="flex gap-3">
-                            <Link href="/techcorp/preview">
+                            <Link href={`/${company?.slug || 'techcorp'}/preview`}>
                                 <Button variant="outline" size="sm">
                                     <Eye className="h-4 w-4" />
                                     Preview
                                 </Button>
                             </Link>
-                            <Link href="/techcorp/edit">
+                            <Link href={`/${company?.slug || 'techcorp'}/edit`}>
                                 <Button size="sm">
                                     <Edit className="h-4 w-4" />
                                     Edit Page
@@ -201,7 +201,7 @@ export default function DashboardPage() {
                                     {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                                     {copied ? 'Copied!' : 'Copy'}
                                 </Button>
-                                <Link href="/techcorp/careers" target="_blank">
+                                <Link href={`/${company?.slug || 'techcorp'}/careers`} target="_blank">
                                     <Button
                                         variant="secondary"
                                         size="sm"

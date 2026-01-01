@@ -79,7 +79,7 @@ export default function CareersPage() {
                         <div className="flex flex-wrap gap-4 justify-center">
                             <Link href="/techcorp/careers">
                                 <Button size="lg">
-                                    View Open Positions
+                                    View Demo Careers Page
                                     <ArrowRight className="h-5 w-5" />
                                 </Button>
                             </Link>
@@ -281,7 +281,7 @@ export default function CareersPage() {
                     </p>
                     <Link href="/techcorp/careers">
                         <Button size="lg" variant="outline" className="bg-white text-indigo-600 hover:bg-gray-100 dark:bg-gray-100 dark:text-indigo-900 dark:hover:bg-white">
-                            View Open Positions
+                            View Demo Positions
                             <ArrowRight className="h-5 w-5" />
                         </Button>
                     </Link>

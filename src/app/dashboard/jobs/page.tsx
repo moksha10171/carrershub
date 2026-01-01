@@ -31,6 +31,7 @@ export default function JobsManagementPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isAuthLoading, setIsAuthLoading] = useState(true);
     const [user, setUser] = useState<any>(null);
+    const [company, setCompany] = useState<any>(null);
     const router = useRouter();
     const supabase = createClient();
 
@@ -44,27 +45,40 @@ export default function JobsManagementPage() {
     const [showAddModal, setShowAddModal] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Check authentication
+    // Check authentication and fetch company
     useEffect(() => {
-        const checkAuth = async () => {
+        const checkAuthAndCompany = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) {
                 router.push('/login');
                 return;
             }
             setUser(user);
+
+            // Fetch user's company
+            const { data: companyData } = await supabase
+                .from('companies')
+                .select('*')
+                .eq('user_id', user.id)
+                .single();
+
+            if (companyData) {
+                setCompany(companyData);
+            }
+
             setIsAuthLoading(false);
         };
-        checkAuth();
-    }, [router, supabase.auth]);
+        checkAuthAndCompany();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [router]);
 
-    // Fetch jobs on mount (after auth check)
+    // Fetch jobs on mount (after auth and company check)
     useEffect(() => {
-        if (!user) return;
+        if (!user || !company) return;
 
         const fetchJobs = async () => {
             try {
-                const response = await fetch('/api/jobs');
+                const response = await fetch(`/api/jobs?company_id=${company.id}`);
                 const data = await response.json();
                 setJobs(data.jobs || []);
             } catch (error) {
@@ -74,7 +88,7 @@ export default function JobsManagementPage() {
             }
         };
         fetchJobs();
-    }, [user]);
+    }, [user, company]);
 
     // Show loading state while checking auth
     if (isAuthLoading) {
@@ -165,23 +179,29 @@ export default function JobsManagementPage() {
 
     // Confirm import
     const confirmImport = async () => {
+        if (!company) return;
+
         setIsUploading(true);
         const now = new Date();
         const newJobs = parsedJobs.map((job, index) => ({
             ...job,
             id: `imported-${Date.now()}-${index}`,
-            company_id: demoCompany.id,
-            slug: job.title.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now(),
+            company_id: company.id,
+            slug: job.title.toLowerCase().replace(/\s+/g, '-') + '-' + Math.random().toString(36).substring(2, 7),
             description: `<p>${job.title} position in our ${job.department} team.</p>`,
             is_active: true,
             posted_at: now.toISOString(),
             updated_at: now.toISOString(),
         })) as Job[];
 
-        // Simulate API call for import
+        // API call for import
         await fetch('/api/jobs', {
             method: 'POST',
-            body: JSON.stringify({ action: 'import', jobs: newJobs }),
+            body: JSON.stringify({
+                action: 'import',
+                company_id: company.id,
+                jobs: newJobs
+            }),
         });
 
         setJobs([...newJobs, ...jobs]);

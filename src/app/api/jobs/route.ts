@@ -97,31 +97,65 @@ export async function POST(request: NextRequest) {
         const { action, jobId, is_active, jobs: importJobs } = body;
         const supabase = await createServerSupabaseClient();
 
-        if (action === 'update_status') {
-            const { error } = await supabase
+        if (action === 'update_status' || action === 'delete') {
+            // Verify ownership
+            const { data: job } = await supabase
                 .from('jobs')
-                .update({ is_active })
-                .eq('id', jobId);
-            if (error) throw error;
-        } else if (action === 'delete') {
-            const { error } = await supabase
-                .from('jobs')
-                .delete()
-                .eq('id', jobId);
-            if (error) throw error;
+                .select('company_id, companies!inner(user_id)')
+                .eq('id', jobId)
+                .single();
+
+            if (!job || (job as any).companies.user_id !== user.id) {
+                return NextResponse.json({ success: false, error: 'Not authorized or job not found' }, { status: 403 });
+            }
+
+            if (action === 'update_status') {
+                const { error } = await supabase
+                    .from('jobs')
+                    .update({ is_active })
+                    .eq('id', jobId);
+                if (error) throw error;
+            } else if (action === 'delete') {
+                const { error } = await supabase
+                    .from('jobs')
+                    .delete()
+                    .eq('id', jobId);
+                if (error) throw error;
+            }
         }
         // Import jobs
         if (action === 'import') {
-            // The `importJobs` variable is already destructured from `body`
-            if (!Array.isArray(importJobs) || importJobs.length === 0) {
-                return NextResponse.json({ success: false, error: 'No jobs provided' }, { status: 400 });
+            const { company_id, jobs: importJobs } = body;
+
+            if (!company_id || !Array.isArray(importJobs) || importJobs.length === 0) {
+                return NextResponse.json({ success: false, error: 'Company ID and jobs required' }, { status: 400 });
+            }
+
+            // Verify company ownership
+            const { data: company } = await supabase
+                .from('companies')
+                .select('id, user_id')
+                .eq('id', company_id)
+                .single();
+
+            if (!company || company.user_id !== user.id) {
+                return NextResponse.json({ success: false, error: 'Not authorized or company not found' }, { status: 403 });
             }
 
             try {
+                // Ensure all jobs have the correct company_id
+                const jobsToInsert = importJobs.map(job => ({
+                    ...job,
+                    company_id: company.id,
+                    user_id: user.id, // For RLS if needed
+                    is_active: job.is_active !== false,
+                    posted_at: job.posted_at || new Date().toISOString(),
+                }));
+
                 // Insert jobs into Supabase
                 const { data, error } = await supabase
                     .from('jobs')
-                    .insert(importJobs)
+                    .insert(jobsToInsert)
                     .select();
 
                 if (error) {
