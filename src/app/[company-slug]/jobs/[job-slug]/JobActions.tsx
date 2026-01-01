@@ -31,7 +31,7 @@ export function JobActions({
                     url: jobUrl,
                 });
             } catch (err) {
-                console.log('Share cancelled');
+                // Share cancelled or failed
             }
         } else {
             setShowShareMenu(!showShareMenu);

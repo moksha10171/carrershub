@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAllJobs, getFilterOptions, demoCompany } from '@/lib/data';
+import { getFilterOptions } from '@/lib/data';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import type { Job } from '@/types';
 
@@ -9,7 +9,15 @@ export async function GET(request: NextRequest) {
         const supabase = await createServerSupabaseClient();
 
         // Query parameters
-        const companyId = searchParams.get('company_id') || demoCompany.id;
+        const companyId = searchParams.get('company_id');
+        if (!companyId) {
+            return NextResponse.json({
+                success: false,
+                error: 'Company ID is required',
+                jobs: [],
+                total: 0
+            }, { status: 400 });
+        }
         const search = searchParams.get('search');
         const location = searchParams.get('location');
         const department = searchParams.get('department');
@@ -31,12 +39,12 @@ export async function GET(request: NextRequest) {
             if (dbJobs && !dbError) {
                 jobs = dbJobs;
             } else {
-                console.warn('Supabase query failed, falling back to demo data:', dbError?.message);
-                jobs = getAllJobs(companyId);
+                console.error('Supabase query failed:', dbError?.message);
+                // jobs remain empty
             }
         } catch (supabaseError) {
-            console.warn('Supabase connection failed, using demo data:', supabaseError);
-            jobs = getAllJobs(companyId);
+            console.error('Supabase connection failed:', supabaseError);
+            // jobs remain empty
         }
 
         // Apply filters
@@ -71,15 +79,13 @@ export async function GET(request: NextRequest) {
         });
     } catch (error: any) {
         console.error('Error fetching jobs:', error);
-        // Graceful fallback with demo data
-        const fallbackJobs = getAllJobs();
         return NextResponse.json({
-            success: true,
-            jobs: fallbackJobs,
-            total: fallbackJobs.length,
-            filters: getFilterOptions(fallbackJobs),
-            warning: 'Using demo data due to server error',
-        }, { status: 200 });
+            success: false,
+            error: 'Failed to fetch jobs',
+            jobs: [],
+            total: 0,
+            filters: { locations: [], departments: [], types: [] }
+        }, { status: 500 });
     }
 }
 

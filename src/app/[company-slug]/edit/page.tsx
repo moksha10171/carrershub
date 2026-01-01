@@ -3,13 +3,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
-import { motion, Reorder } from 'framer-motion';
+import { motion, Reorder, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import {
     Palette, Image, Type, Video, GripVertical, Plus, Trash2, Eye,
-    Save, ChevronLeft, Check, AlertCircle, Upload, Link as LinkIcon
+    Save, ChevronLeft, Check, AlertCircle, Upload, LinkIcon, CheckCircle
 } from 'lucide-react';
 // import { demoCompany, demoSettings, demoSections } from '@/lib/data';
 import { createClient } from '@/lib/supabase/client';
@@ -71,6 +71,7 @@ export default function EditPage() {
     const [activeTab, setActiveTab] = useState<'branding' | 'content' | 'seo'>('branding');
     const [isSaving, setIsSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
+    const [saveError, setSaveError] = useState('');
     const [hasChanges, setHasChanges] = useState(false);
 
     // Keyboard shortcuts (Ctrl+S to save)
@@ -260,6 +261,7 @@ export default function EditPage() {
             }
 
             setSaveSuccess(true);
+            setSaveError('');
             setHasChanges(false);
             setTimeout(() => setSaveSuccess(false), 3000);
         } catch (error: any) {
@@ -268,7 +270,10 @@ export default function EditPage() {
             // For now, setting a temporary error state would be better than alert, 
             // but for simple feedback let's stick to a clear console error or simple UI feedback if we had a slot.
             // Let's add an error UI near the save button in the future.
-            alert(`Error: ${error.message || 'Failed to save changes'}`);
+            console.error('Save failed:', error);
+            setSaveError(`Error: ${error.message || 'Failed to save changes'}`);
+            setSaveSuccess(false);
+            setTimeout(() => setSaveError(''), 5000);
         } finally {
             setIsSaving(false);
         }
@@ -345,6 +350,33 @@ export default function EditPage() {
                             <span className="text-sm text-amber-700 dark:text-amber-300">You have unsaved changes</span>
                         </motion.div>
                     )}
+
+                    {/* Save Success/Error Messages */}
+                    <AnimatePresence>
+                        {saveSuccess && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0 }}
+                                className="mb-6 p-3 rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 flex items-center gap-2"
+                            >
+                                <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                <span className="text-sm text-green-700 dark:text-green-300">Changes saved successfully!</span>
+                            </motion.div>
+                        )}
+                        {saveError && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0 }}
+                                className="mb-6 p-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 flex items-center gap-2"
+                            >
+                                <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                                <span className="text-sm text-red-700 dark:text-red-300">{saveError}</span>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
 
                     {/* Tabs */}
                     <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700" role="tablist" aria-label="Editor tabs">

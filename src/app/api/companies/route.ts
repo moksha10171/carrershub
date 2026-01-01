@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { demoCompany, demoSettings, demoSections, getAllJobs } from '@/lib/data';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+
 import { requireAuth, unauthorizedResponse } from '@/lib/api/auth';
 
 export async function GET(request: NextRequest) {
@@ -63,26 +63,7 @@ export async function GET(request: NextRequest) {
             });
         }
 
-        // Fallback to demo
-        if (slug === 'techcorp' || slug === demoCompany.slug) {
-            const jobs = getAllJobs(demoCompany.id);
-            return NextResponse.json({
-                success: true,
-                data: {
-                    company: demoCompany,
-                    settings: demoSettings,
-                    sections: demoSections,
-                    jobCount: jobs.length,
-                    stats: {
-                        totalJobs: jobs.length,
-                        departments: Array.from(new Set(jobs.map(j => j.department))).length,
-                        locations: Array.from(new Set(jobs.map(j => j.location))).length,
-                        remoteJobs: jobs.filter(j => j.work_policy === 'Remote').length,
-                    },
-                },
-            });
-        }
-
+        // Return 404 if not found
         return NextResponse.json({ success: false, error: 'Not found' }, { status: 404 });
     } catch (error) {
         console.error('Companies GET error:', error);

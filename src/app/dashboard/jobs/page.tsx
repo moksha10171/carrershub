@@ -11,7 +11,7 @@ import {
     Upload, FileSpreadsheet, Plus, Trash2, Edit2, Eye, EyeOff,
     CheckCircle, AlertCircle, Download, ChevronLeft, Search, Filter
 } from 'lucide-react';
-import { getAllJobs, demoCompany } from '@/lib/data';
+import { getAllJobs } from '@/lib/data';
 import { createClient } from '@/lib/supabase/client';
 import type { Job } from '@/types';
 
@@ -43,7 +43,39 @@ export default function JobsManagementPage() {
     const [parsedJobs, setParsedJobs] = useState<ParsedJob[]>([]);
     const [showUploadModal, setShowUploadModal] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
+    const [isLoadingSampleData, setIsLoadingSampleData] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Load sample data from JSON
+    const loadSampleData = async () => {
+        if (!company) return;
+        setIsLoadingSampleData(true);
+        setUploadError('');
+
+        try {
+            const response = await fetch('/api/seed-jobs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ company_id: company.id }),
+            });
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.error || 'Failed to load sample data');
+            }
+
+            // Refetch jobs
+            const jobsResponse = await fetch(`/api/jobs?company_id=${company.id}`);
+            const jobsData = await jobsResponse.json();
+            setJobs(jobsData.jobs || []);
+            setUploadSuccess(true);
+            setTimeout(() => setUploadSuccess(false), 3000);
+        } catch (error: any) {
+            setUploadError(error.message || 'Failed to load sample data');
+        } finally {
+            setIsLoadingSampleData(false);
+        }
+    };
 
     // Check authentication and fetch company
     useEffect(() => {
@@ -270,6 +302,17 @@ export default function JobsManagementPage() {
                             </div>
                         </div>
                         <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={loadSampleData}
+                                isLoading={isLoadingSampleData}
+                                disabled={jobs.length > 0}
+                                title={jobs.length > 0 ? 'Sample data already loaded or jobs exist' : 'Load 30 sample jobs'}
+                            >
+                                <FileSpreadsheet className="h-4 w-4" />
+                                Load Sample Data
+                            </Button>
                             <Button
                                 variant="outline"
                                 size="sm"
