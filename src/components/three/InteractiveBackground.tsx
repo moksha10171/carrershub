@@ -37,7 +37,7 @@ export default function InteractiveBackground({ className = '' }: InteractiveBac
     // Don't render on server or if user prefers reduced motion
     if (!mounted || prefersReducedMotion) {
         return (
-            <div className={`absolute inset-0 -z-10 ${className}`}>
+            <div className={`absolute inset-0 z-0 ${className}`}>
                 {/* Static fallback gradient */}
                 <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/30 via-purple-50/20 to-pink-50/10 dark:from-indigo-950/30 dark:via-purple-950/20 dark:to-pink-950/10" />
             </div>
@@ -50,7 +50,7 @@ export default function InteractiveBackground({ className = '' }: InteractiveBac
     return (
         <div
             ref={containerRef}
-            className={`absolute inset-0 -z-10 ${className}`}
+            className={`absolute inset-0 z-0 ${className}`}
             style={{ touchAction: 'none' }}
         >
             <Canvas

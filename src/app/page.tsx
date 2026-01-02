@@ -18,11 +18,8 @@ export default function HomePage() {
         <div className="min-h-screen bg-white dark:bg-gray-950">
             {/* Hero Section */}
             <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden px-4 sm:px-6 lg:px-8 pt-20">
-                {/* Three.js Interactive Particle Background */}
-                <InteractiveBackground />
-
-                {/* Background Image with Overlay */}
-                <div className="absolute inset-0 z-0 pointer-events-none">
+                {/* Background Image with Overlay (behind everything) */}
+                <div className="absolute inset-0 -z-10 pointer-events-none">
                     <img
                         src="/images/hero-bg.png"
                         alt="Background"
@@ -30,6 +27,9 @@ export default function HomePage() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-white/60 to-white dark:from-gray-950/10 dark:via-gray-950/60 dark:to-gray-950" />
                 </div>
+
+                {/* Three.js Interactive Particle Background (on top of image background) */}
+                <InteractiveBackground />
 
                 <div className="relative z-10 max-w-6xl mx-auto text-center py-12 sm:py-16 lg:py-20">
                     <motion.div

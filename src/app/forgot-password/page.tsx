@@ -8,9 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { Mail, ArrowRight, AlertCircle, CheckCircle, ChevronLeft } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
-export default function For
-
-gotPasswordPage() {
+export default function ForgotPasswordPage() {
     const [email, setEmail] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
