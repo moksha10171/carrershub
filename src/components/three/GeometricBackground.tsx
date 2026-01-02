@@ -31,24 +31,24 @@ export default function GeometricBackground({ color = '#4F46E5', isDark = false 
                 const zPos = z * separation - offset;
 
                 // Wave calculations
-                // 1. Radial wave
+                // 1. Radial wave (slower, broader)
                 const dist = Math.sqrt(xPos * xPos + zPos * zPos);
-                const radialWave = Math.sin(dist * 0.3 - time * 1.5) * 1.5;
+                const radialWave = Math.sin(dist * 0.25 - time * 0.8) * 1.5;
 
-                // 2. Linear wave
-                const linearWave = Math.sin(xPos * 0.4 + time) * 1;
+                // 2. Linear wave (diagonal flow)
+                const linearWave = Math.sin(xPos * 0.3 + zPos * 0.2 + time * 1.2) * 1;
 
                 // Combine
                 const yPos = radialWave + linearWave;
 
                 dummy.position.set(xPos, yPos - 5, zPos); // Push down slightly
 
-                // Rotate based on height
-                dummy.rotation.x = Math.sin(time + xPos * 0.1) * 0.3;
-                dummy.rotation.z = Math.cos(time + zPos * 0.1) * 0.3;
+                // Rotate based on height and time - smoother rotation
+                dummy.rotation.x = Math.sin(time * 0.5 + xPos * 0.1) * 0.5;
+                dummy.rotation.z = Math.cos(time * 0.5 + zPos * 0.1) * 0.5;
 
                 // Scale based on height (peaks are larger)
-                const scale = Math.max(0.2, (yPos + 4) * 0.15);
+                const scale = Math.max(0.2, (yPos + 4) * 0.18);
                 dummy.scale.set(scale, scale, scale);
 
                 dummy.updateMatrix();

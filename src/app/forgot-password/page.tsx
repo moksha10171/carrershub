@@ -1,18 +1,25 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Mail, ArrowRight, AlertCircle, CheckCircle, ChevronLeft } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { Canvas } from '@react-three/fiber';
+import GeometricBackground from '@/components/three/GeometricBackground';
 
 export default function ForgotPasswordPage() {
     const [email, setEmail] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const supabase = createClient();
 
@@ -52,14 +59,27 @@ export default function ForgotPasswordPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-indigo-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
-            <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-24 pb-12">
+        <div className="min-h-screen relative overflow-hidden bg-gray-50 dark:bg-gray-950">
+            {/* 3D Background */}
+            <div className="absolute inset-0 z-0">
+                <Canvas camera={{ position: [0, 8, 15], fov: 45 }}>
+                    <color attach="background" args={['#030712']} />
+                    <ambientLight intensity={0.5} />
+                    <pointLight position={[10, 10, 10]} intensity={1} />
+                    <pointLight position={[-10, 10, -10]} intensity={0.5} color="#4f46e5" />
+                    {mounted && <GeometricBackground color="#4f46e5" isDark={true} />}
+                </Canvas>
+                {/* Gradients for text readability */}
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-gray-900/80 opacity-90" />
+            </div>
+
+            <div className="min-h-screen relative z-10 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-24 pb-12">
                 <div className="w-full max-w-md">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5 }}
-                        className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-8"
+                        className="bg-white/10 dark:bg-gray-900/60 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/50 p-8 sm:p-10"
                     >
                         {success ? (
                             <motion.div
@@ -125,12 +145,12 @@ export default function ForgotPasswordPage() {
 
                                     <Button
                                         type="submit"
-                                        className="w-full"
+                                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white border-0 shadow-lg shadow-indigo-500/30 transition-all duration-300 transform hover:-translate-y-0.5"
                                         size="lg"
                                         isLoading={isLoading}
                                     >
                                         Send Reset Link
-                                        <ArrowRight className="h-5 w-5" />
+                                        <ArrowRight className="h-5 w-5 ml-2" />
                                     </Button>
                                 </form>
 

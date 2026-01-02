@@ -52,19 +52,20 @@ export function BlogHero() {
                 style={{ y, opacity }}
                 className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 text-center"
             >
-                <div className="max-w-3xl mx-auto space-y-8">
+                <div className="max-w-4xl mx-auto space-y-8">
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.8, ease: "easeOut" }}
+                        className="bg-white/40 dark:bg-gray-900/40 backdrop-blur-md rounded-3xl p-8 sm:p-12 shadow-sm ring-1 ring-gray-200/50 dark:ring-gray-800/50"
                     >
                         <span className="inline-block px-4 py-1.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 font-medium text-sm mb-6 border border-indigo-200 dark:border-indigo-800">
                             Engineering & Design
                         </span>
-                        <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-gray-900 dark:text-white mb-6">
+                        <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight text-gray-900 dark:text-white mb-6">
                             Insights & <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400">Updates</span>
                         </h1>
-                        <p className="text-xl text-gray-600 dark:text-gray-300 leading-relaxed max-w-2xl mx-auto">
+                        <p className="text-lg sm:text-xl text-gray-700 dark:text-gray-300 leading-relaxed max-w-2xl mx-auto font-medium">
                             Discover stories, thinking, and expertise from writers on any topic.
                         </p>
                     </motion.div>
@@ -77,12 +78,12 @@ export function BlogHero() {
                     >
                         <div className="relative group">
                             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <Search className="h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
+                                <Search className="h-5 w-5 text-gray-500 dark:text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
                             </div>
                             <input
                                 type="text"
                                 placeholder="Search articles..."
-                                className="block w-full pl-11 pr-4 py-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-2xl text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent shadow-lg shadow-gray-200/50 dark:shadow-none transition-all"
+                                className="block w-full pl-11 pr-4 py-4 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-gray-200 dark:border-gray-700 rounded-2xl text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent shadow-lg shadow-gray-200/20 dark:shadow-none transition-all"
                             />
                         </div>
                     </motion.div>

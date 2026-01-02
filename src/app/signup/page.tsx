@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -8,12 +8,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import dynamic from 'next/dynamic';
-
-const InteractiveBackground = dynamic(
-    () => import('@/components/three/InteractiveBackground'),
-    { ssr: false }
-);
+import { Canvas } from '@react-three/fiber';
+import GeometricBackground from '@/components/three/GeometricBackground';
 
 type Step = 'signup' | 'verify' | 'success';
 
@@ -26,6 +22,11 @@ export default function SignupPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     // OTP state
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -216,18 +217,27 @@ export default function SignupPage() {
     };
 
     return (
-        <div className="min-h-screen relative overflow-hidden bg-white dark:bg-gray-950">
-            <InteractiveBackground className="opacity-60" />
+        <div className="min-h-screen relative overflow-hidden bg-gray-50 dark:bg-gray-950">
+            {/* 3D Background */}
+            <div className="absolute inset-0 z-0">
+                <Canvas camera={{ position: [0, 8, 15], fov: 45 }}>
+                    <color attach="background" args={['#030712']} />
+                    <ambientLight intensity={0.5} />
+                    <pointLight position={[10, 10, 10]} intensity={1} />
+                    <pointLight position={[-10, 10, -10]} intensity={0.5} color="#4f46e5" />
+                    {mounted && <GeometricBackground color="#4f46e5" isDark={true} />}
+                </Canvas>
+                {/* Gradients for text readability */}
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-gray-900/80 opacity-90" />
+            </div>
 
-            {/* Gradient Overlay for better text readability */}
-            <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-white/80 via-white/50 to-indigo-50/50 dark:from-gray-950/80 dark:via-gray-950/50 dark:to-gray-950/80" />
-            <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-24 pb-12">
+            <div className="min-h-screen relative z-10 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-24 pb-12">
                 <div className="w-full max-w-md">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5 }}
-                        className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-8"
+                        className="bg-white/10 dark:bg-gray-900/60 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/50 p-8 sm:p-10"
                     >
                         {step === 'success' ? (
                             <motion.div
@@ -294,12 +304,12 @@ export default function SignupPage() {
 
                                     <Button
                                         type="submit"
-                                        className="w-full"
+                                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white border-0 shadow-lg shadow-indigo-500/30 transition-all duration-300 transform hover:-translate-y-0.5"
                                         size="lg"
                                         isLoading={isLoading}
                                     >
                                         Verify Email
-                                        <ArrowRight className="h-5 w-5" />
+                                        <ArrowRight className="h-5 w-5 ml-2" />
                                     </Button>
                                 </form>
 
@@ -430,12 +440,12 @@ export default function SignupPage() {
 
                                     <Button
                                         type="submit"
-                                        className="w-full"
+                                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white border-0 shadow-lg shadow-indigo-500/30 transition-all duration-300 transform hover:-translate-y-0.5"
                                         size="lg"
                                         isLoading={isLoading}
                                     >
                                         Continue with Email
-                                        <ArrowRight className="h-5 w-5" />
+                                        <ArrowRight className="h-5 w-5 ml-2" />
                                     </Button>
                                 </form>
 
