@@ -1,56 +1,27 @@
-import { Metadata } from 'next';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+'use client';
+
+import React, { Suspense } from 'react';
 import { SearchPageClient } from '@/components/search/SearchPageClient';
 
-export const metadata: Metadata = {
-    title: 'Search | CareerHub',
-    description: 'Search for jobs and companies.',
-};
-
-export default async function SearchPage({
-    searchParams,
-}: {
-    searchParams: { q?: string };
-}) {
-    const query = searchParams.q || '';
-    const supabase = await createServerSupabaseClient();
-
-    let jobs: any[] = [];
-    let companies: any[] = [];
-
-    if (query) {
-        // Fetch Jobs
-        const { data: jobsData } = await supabase
-            .from('jobs')
-            .select(`
-                *,
-                companies (
-                    name,
-                    slug,
-                    logo_url
-                )
-            `)
-            .eq('is_active', true)
-            .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
-            .limit(20);
-
-        if (jobsData) jobs = jobsData;
-
-        // Fetch Companies
-        const { data: companiesData } = await supabase
-            .from('companies')
-            .select('*')
-            .or(`name.ilike.%${query}%,industry.ilike.%${query}%`)
-            .limit(20);
-
-        if (companiesData) companies = companiesData;
-    }
-
+// Wrap in Suspense for useSearchParams
+function SearchContent() {
     return (
         <SearchPageClient
-            initialJobs={jobs}
-            initialCompanies={companies}
-            initialQuery={query}
+            initialJobs={[]}
+            initialCompanies={[]}
+            initialQuery=""
         />
+    );
+}
+
+export default function SearchPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pt-24 pb-12 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+            </div>
+        }>
+            <SearchContent />
+        </Suspense>
     );
 }

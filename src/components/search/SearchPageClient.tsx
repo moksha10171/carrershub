@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { Search, Briefcase, Building2, LayoutGrid, List } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
@@ -24,32 +24,43 @@ interface SearchPageClientProps {
 }
 
 export function SearchPageClient({ initialJobs, initialCompanies, initialQuery }: SearchPageClientProps) {
-    const router = useRouter();
-    const [query, setQuery] = useState(initialQuery);
-    const [activeTab, setActiveTab] = useState<'jobs' | 'companies'>(initialJobs.length === 0 && initialCompanies.length > 0 ? 'companies' : 'jobs');
+    const searchParams = useSearchParams();
+    const [query, setQuery] = useState(searchParams.get('q') || initialQuery);
+    const [jobs, setJobs] = useState<JobWithCompany[]>(initialJobs);
+    const [companies, setCompanies] = useState<any[]>(initialCompanies);
+    const [activeTab, setActiveTab] = useState<'jobs' | 'companies'>('jobs');
     const [isPending, setIsPending] = useState(false);
 
-    // Debounced Search Effect
+    // Debounced Search Effect - fetch from API
     useEffect(() => {
-        const timer = setTimeout(() => {
-            if (query !== initialQuery) {
-                setIsPending(true);
-                const params = new URLSearchParams();
-                if (query) params.set('q', query);
-                router.replace(`/search?${params.toString()}`);
+        const timer = setTimeout(async () => {
+            if (!query.trim()) {
+                setJobs([]);
+                setCompanies([]);
+                return;
+            }
+
+            setIsPending(true);
+            try {
+                const response = await fetch(`/api/global-search?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                if (data.success) {
+                    setJobs(data.data.jobs || []);
+                    setCompanies(data.data.companies || []);
+                }
+            } catch (error) {
+                console.error('Search failed:', error);
+            } finally {
                 setIsPending(false);
             }
-        }, 500);
+        }, 400);
 
         return () => clearTimeout(timer);
-    }, [query, router, initialQuery]);
+    }, [query]);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
-        // Trigger immediate navigation
-        const params = new URLSearchParams();
-        if (query) params.set('q', query);
-        router.push(`/search?${params.toString()}`);
+        // Search is already triggered by the useEffect above
     };
 
     return (
@@ -103,7 +114,7 @@ export function SearchPageClient({ initialJobs, initialCompanies, initialQuery }
                             <Briefcase className="h-4 w-4" />
                             Jobs
                             <span className={`ml-1.5 px-2 py-0.5 rounded-full text-xs ${activeTab === 'jobs' ? 'bg-indigo-100 dark:bg-indigo-800/40 text-indigo-600 dark:text-indigo-300' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'}`}>
-                                {initialJobs.length}
+                                {jobs.length}
                             </span>
                         </button>
                         <button
@@ -116,7 +127,7 @@ export function SearchPageClient({ initialJobs, initialCompanies, initialQuery }
                             <Building2 className="h-4 w-4" />
                             Companies
                             <span className={`ml-1.5 px-2 py-0.5 rounded-full text-xs ${activeTab === 'companies' ? 'bg-indigo-100 dark:bg-indigo-800/40 text-indigo-600 dark:text-indigo-300' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'}`}>
-                                {initialCompanies.length}
+                                {companies.length}
                             </span>
                         </button>
                     </div>
@@ -149,7 +160,16 @@ export function SearchPageClient({ initialJobs, initialCompanies, initialQuery }
                                 ))}
                             </div>
                         </motion.div>
-                    ) : query && (initialJobs.length === 0 && initialCompanies.length === 0) ? (
+                    ) : isPending ? (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="text-center py-16"
+                        >
+                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto"></div>
+                            <p className="text-gray-500 dark:text-gray-400 mt-4">Searching...</p>
+                        </motion.div>
+                    ) : query && (jobs.length === 0 && companies.length === 0) ? (
                         <motion.div
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -174,10 +194,10 @@ export function SearchPageClient({ initialJobs, initialCompanies, initialQuery }
                         >
                             {activeTab === 'jobs' ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {initialJobs.map((job, idx) => (
+                                    {jobs.map((job, idx) => (
                                         <JobCard key={job.id} job={job} index={idx} companySlug={job.companies?.slug || 'demo'} />
                                     ))}
-                                    {initialJobs.length === 0 && (
+                                    {jobs.length === 0 && (
                                         <div className="col-span-full text-center py-12 text-gray-500">
                                             No jobs found matching "{query}"
                                         </div>
@@ -185,10 +205,10 @@ export function SearchPageClient({ initialJobs, initialCompanies, initialQuery }
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {initialCompanies.map((company, idx) => (
+                                    {companies.map((company, idx) => (
                                         <CompanyCard key={company.id} company={company} index={idx} />
                                     ))}
-                                    {initialCompanies.length === 0 && (
+                                    {companies.length === 0 && (
                                         <div className="col-span-full text-center py-12 text-gray-500">
                                             No companies found matching "{query}"
                                         </div>
