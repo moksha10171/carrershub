@@ -1,51 +1,49 @@
 'use client';
 
-import dynamic from 'next/dynamic';
-import { Suspense, useEffect, useState, useRef } from 'react';
+import React, { Suspense, useRef, useEffect, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
-
-// Dynamically import FloatingParticles to avoid SSR issues
-const FloatingParticles = dynamic(() => import('./FloatingParticles'), {
-    ssr: false,
-});
+import FloatingParticles from './FloatingParticles';
 
 interface InteractiveBackgroundProps {
     className?: string;
 }
 
 export default function InteractiveBackground({ className = '' }: InteractiveBackgroundProps) {
-    const [mounted, setMounted] = useState(false);
-    const [isMobile, setIsMobile] = useState(false);
-    const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
+    const [isMobile, setIsMobile] = useState(false);
+    const [isReducedMotion, setIsReducedMotion] = useState(false);
 
     useEffect(() => {
-        setMounted(true);
-        setIsMobile(window.innerWidth < 768);
-        setPrefersReducedMotion(
-            window.matchMedia('(prefers-reduced-motion: reduce)').matches
-        );
-
-        const handleResize = () => {
+        // Check for mobile device
+        const checkMobile = () => {
             setIsMobile(window.innerWidth < 768);
         };
 
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+        // Check for reduced motion preference
+        const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+        setIsReducedMotion(motionQuery.matches);
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+
+        return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    // Don't render on server or if user prefers reduced motion
-    if (!mounted || prefersReducedMotion) {
+    // Fewer particles on mobile, respect motion preferences
+    const particleCount = isReducedMotion ? 0 : isMobile ? 120 : 300;
+    const repelRadius = isMobile ? 1.5 : 2.5;
+
+    // Skip rendering if user prefers reduced motion
+    if (isReducedMotion) {
         return (
-            <div className={`absolute inset-0 z-0 ${className}`}>
-                {/* Static fallback gradient */}
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/30 via-purple-50/20 to-pink-50/10 dark:from-indigo-950/30 dark:via-purple-950/20 dark:to-pink-950/10" />
-            </div>
+            <div
+                className={`absolute inset-0 z-0 ${className}`}
+                style={{
+                    background: 'radial-gradient(ellipse at center, rgba(99, 102, 241, 0.03) 0%, transparent 70%)',
+                }}
+            />
         );
     }
-
-    const particleCount = isMobile ? 80 : 200;
-    const repelRadius = isMobile ? 2 : 3;
 
     return (
         <div
@@ -54,27 +52,28 @@ export default function InteractiveBackground({ className = '' }: InteractiveBac
             style={{ touchAction: 'none' }}
         >
             <Canvas
-                camera={{ position: [0, 0, 12], fov: 75 }}
-                dpr={[1, 1.5]}
+                camera={{
+                    position: [0, 0, 12],
+                    fov: 60,
+                    near: 0.1,
+                    far: 100,
+                }}
                 gl={{
-                    antialias: false,
+                    antialias: true,
                     alpha: true,
                     powerPreference: 'high-performance',
                 }}
-                style={{
-                    background: 'transparent',
-                }}
-                eventSource={typeof document !== 'undefined' ? document.body : undefined}
-                eventPrefix="page"
+                dpr={[1, 1.5]} // Better quality on retina
+                style={{ background: 'transparent' }}
             >
                 <Suspense fallback={null}>
                     <FloatingParticles
                         count={particleCount}
                         repelRadius={repelRadius}
-                        repelStrength={0.12}
+                        repelStrength={0.08}
                     />
-                    <ambientLight intensity={0.8} />
-                    <pointLight position={[10, 10, 10]} intensity={0.5} color="#a855f7" />
+                    {/* Subtle ambient light for visibility */}
+                    <ambientLight intensity={0.5} />
                 </Suspense>
             </Canvas>
         </div>

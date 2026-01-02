@@ -15,7 +15,7 @@ interface JobCardProps {
     onClick?: () => void;
 }
 
-export function JobCard({ job, index = 0, companySlug = 'techcorp', onClick }: JobCardProps) {
+export function JobCard({ job, index = 0, companySlug = 'demo', onClick }: JobCardProps) {
     const formatPostedDate = (dateString: string) => {
         const date = new Date(dateString);
         const now = new Date();

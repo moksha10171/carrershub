@@ -10,10 +10,11 @@ import type { Job, JobFilters } from '@/types';
 
 interface JobListingsProps {
     jobs: Job[];
+    companySlug?: string;
     isLoading?: boolean;
 }
 
-export function JobListings({ jobs, isLoading = false }: JobListingsProps) {
+export function JobListings({ jobs, companySlug = 'demo', isLoading = false }: JobListingsProps) {
     const [filters, setFilters] = useState<JobFilters>({
         search: '',
         location: '',
@@ -165,7 +166,7 @@ export function JobListings({ jobs, isLoading = false }: JobListingsProps) {
                                             : 'grid-cols-1 max-w-3xl'
                                             }`}>
                                             {deptJobs.map((job, index) => (
-                                                <JobCard key={job.id} job={job} index={index} />
+                                                <JobCard key={job.id} job={job} index={index} companySlug={companySlug} />
                                             ))}
                                         </div>
                                     </motion.div>

@@ -180,7 +180,7 @@ export function CareersPageClient({ company, settings, sections, jobs }: Careers
                 {/* Job Listings */}
                 <ErrorBoundary>
                     {jobs && jobs.length > 0 ? (
-                        <JobListings jobs={jobs} />
+                        <JobListings jobs={jobs} companySlug={company.slug} />
                     ) : (
                         <div className="py-20 sm:py-24 bg-white dark:bg-gray-900">
                             <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
