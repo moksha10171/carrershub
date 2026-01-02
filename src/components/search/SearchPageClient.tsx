@@ -45,8 +45,8 @@ export function SearchPageClient({ initialJobs, initialCompanies, initialQuery }
                 const response = await fetch(`/api/global-search?q=${encodeURIComponent(query)}`);
                 const data = await response.json();
                 if (data.success) {
-                    setJobs(data.data.jobs || []);
-                    setCompanies(data.data.companies || []);
+                    setJobs(data.jobs || []);
+                    setCompanies(data.companies || []);
                 }
             } catch (error) {
                 console.error('Search failed:', error);

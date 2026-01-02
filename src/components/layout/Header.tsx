@@ -66,7 +66,6 @@ export function Header({ variant = 'solid', showDarkModeToggle = true }: HeaderP
         { href: '/about', label: 'About' },
         { href: '/search', label: 'Search' },
         { href: '/blog', label: 'Blog' },
-        { href: '/techcorp/careers', label: 'Examples' },
         { href: '/contact', label: 'Contact' },
     ];
 

@@ -76,9 +76,9 @@ export default function HomePage() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.5 }}
                         >
-                            <Link href="/techcorp/careers" className="w-full sm:w-auto">
-                                <Button size="xl" className="w-full sm:w-auto group text-lg px-10 py-7 rounded-2xl shadow-lg hover:shadow-xl transition-all">
-                                    View Example Page
+                            <Link href="/signup" className="w-full sm:w-auto">
+                                <Button size="xl" className="w-full sm:w-auto group text-lg px-10 py-7 rounded-2xl shadow-lg hover:shadow-xl transition-all bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 border-0">
+                                    Get Started
                                     <ArrowRight className="h-6 w-6 group-hover:translate-x-1 transition-transform" />
                                 </Button>
                             </Link>
