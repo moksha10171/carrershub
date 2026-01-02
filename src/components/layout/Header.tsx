@@ -64,7 +64,9 @@ export function Header({ variant = 'solid', showDarkModeToggle = true }: HeaderP
     const navLinks = [
         { href: '/', label: 'Home' },
         { href: '/about', label: 'About' },
-        { href: '/techcorp/careers', label: 'Examples' }, // Renamed from Demo
+        { href: '/search', label: 'Search' },
+        { href: '/blog', label: 'Blog' },
+        { href: '/techcorp/careers', label: 'Examples' },
         { href: '/contact', label: 'Contact' },
     ];
 

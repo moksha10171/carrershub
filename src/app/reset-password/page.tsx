@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { Eye, EyeOff, Lock, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Canvas } from '@react-three/fiber';
-import GeometricBackground from '@/components/three/GeometricBackground';
+import AuthParticles from '@/components/three/AuthParticles';
 import { useTheme } from 'next-themes';
 
 export default function ResetPasswordPage() {
@@ -28,7 +28,6 @@ export default function ResetPasswordPage() {
 
     const isDark = mounted && (theme === 'dark' || resolvedTheme === 'dark');
     const canvasBgColor = isDark ? '#030712' : '#f9fafb';
-    const particleColor = isDark ? '#818cf8' : '#4f46e5';
 
     const router = useRouter();
     const supabase = createClient();
@@ -88,15 +87,11 @@ export default function ResetPasswordPage() {
         <div className="min-h-screen relative overflow-hidden bg-gray-50 dark:bg-gray-950">
             {/* 3D Background */}
             <div className="absolute inset-0 z-0">
-                <Canvas camera={{ position: [0, 8, 15], fov: 45 }}>
+                <Canvas camera={{ position: [0, 0, 20], fov: 60 }}>
                     <color attach="background" args={[canvasBgColor]} />
-                    <ambientLight intensity={isDark ? 0.5 : 0.8} />
-                    <pointLight position={[10, 10, 10]} intensity={isDark ? 1 : 0.7} />
-                    <pointLight position={[-10, 10, -10]} intensity={0.5} color="#4f46e5" />
-                    {mounted && <GeometricBackground color={particleColor} isDark={isDark} />}
+                    <ambientLight intensity={0.5} />
+                    {mounted && <AuthParticles count={150} isDark={isDark} />}
                 </Canvas>
-                {/* Gradients for text readability */}
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-50/90 via-transparent to-gray-50/90 dark:from-gray-950/90 dark:to-gray-950/90 opacity-80" />
             </div>
 
             <div className="min-h-screen relative z-10 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-24 pb-12">
@@ -105,7 +100,7 @@ export default function ResetPasswordPage() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5 }}
-                        className="bg-white/10 dark:bg-gray-900/60 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/50 p-8 sm:p-10"
+                        className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 p-8 sm:p-10"
                     >
                         {success ? (
                             <motion.div
