@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
@@ -42,7 +42,7 @@ export default function FloatingParticles({
                 riseSpeed: 0.01 + Math.random() * 0.03,
                 rotateSpeed: (Math.random() - 0.5) * 0.02,
                 rotation: new THREE.Euler(rotationX, rotationY, rotationZ),
-                colorIndex: Math.floor(Math.random() * 4),
+                colorIndex: Math.floor(Math.random() * 5),
                 // Random offset for sine wave motion
                 timeOffset: Math.random() * 100,
             });
@@ -50,18 +50,35 @@ export default function FloatingParticles({
         return temp;
     }, [count]);
 
-    // Google Blue themed palette
+    // Project Indigo themed palette
     const colors = useMemo(() => {
         const palette = [
-            new THREE.Color('#4285F4'), // Google Blue
-            new THREE.Color('#8AB4F8'), // Light Blue
-            new THREE.Color('#1967D2'), // Darker Blue
-            new THREE.Color('#D2E3FC'), // Very Light Blue/White-ish
+            new THREE.Color('#6366f1'), // primary-500
+            new THREE.Color('#818cf8'), // primary-400
+            new THREE.Color('#a5b4fc'), // primary-300
+            new THREE.Color('#c7d2fe'), // primary-200
+            new THREE.Color('#4f46e5'), // primary-600
         ];
         return particles.map(p => palette[p.colorIndex]);
     }, [particles]);
 
     const dummy = useMemo(() => new THREE.Object3D(), []);
+
+    // Initialize instance colors once on mount
+    useEffect(() => {
+        if (!meshRef.current) return;
+
+        // Set colors for all instances
+        colors.forEach((color, i) => {
+            meshRef.current!.setColorAt(i, color);
+        });
+
+        // Mark as needing update
+        if (meshRef.current.instanceColor) {
+            meshRef.current.instanceColor.needsUpdate = true;
+        }
+    }, [colors]);
+
 
     useFrame((state) => {
         if (!meshRef.current) return;
@@ -124,30 +141,15 @@ export default function FloatingParticles({
         });
 
         meshRef.current.instanceMatrix.needsUpdate = true;
-        // Setting colors once is enough since they are static per particle index allocation
-        if (meshRef.current.instanceColor) {
-            // If we needed dynamic colors we would update here. 
-            // Since we construct geometry once, we need to set colors initially.
-            // We can do it in a useEffect or check a flag. 
-            // InstancedMesh colors need to be set at least once.
-            // But re-setting them every frame is expensive if they don't change.
-            // Let's rely on the initial useEffect or just set it if invalid? 
-            // Actually, the previous code set it every frame. Let's do it once in a LayoutEffect or similar?
-            // Or just check if first frame? 
-            // Simpler: Just set it every frame, it's cheap for 400 particles.
-            particles.forEach((p, i) => meshRef.current!.setColorAt(i, colors[i]));
-            meshRef.current.instanceColor.needsUpdate = true;
-        }
     });
 
     return (
         <instancedMesh ref={meshRef} args={[undefined, undefined, count]}>
-            <boxGeometry args={[1, 1, 1]} />
+            {/* Capsule geometry for smooth rounded edges - radius, length, capSegments, radialSegments */}
+            <capsuleGeometry args={[0.15, 0.6, 8, 12]} />
             <meshBasicMaterial
-                color="#ffffff"
                 transparent
                 opacity={0.9}
-                vertexColors
                 toneMapped={false}
             />
         </instancedMesh>

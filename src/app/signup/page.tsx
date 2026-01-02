@@ -8,6 +8,12 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import dynamic from 'next/dynamic';
+
+const InteractiveBackground = dynamic(
+    () => import('@/components/three/InteractiveBackground'),
+    { ssr: false }
+);
 
 type Step = 'signup' | 'verify' | 'success';
 
@@ -210,7 +216,11 @@ export default function SignupPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-indigo-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+        <div className="min-h-screen relative overflow-hidden bg-white dark:bg-gray-950">
+            <InteractiveBackground className="opacity-60" />
+
+            {/* Gradient Overlay for better text readability */}
+            <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-white/80 via-white/50 to-indigo-50/50 dark:from-gray-950/80 dark:via-gray-950/50 dark:to-gray-950/80" />
             <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-24 pb-12">
                 <div className="w-full max-w-md">
                     <motion.div

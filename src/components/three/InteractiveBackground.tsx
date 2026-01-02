@@ -39,7 +39,7 @@ export default function InteractiveBackground({ className = '' }: InteractiveBac
             <div
                 className={`absolute inset-0 z-0 ${className}`}
                 style={{
-                    background: 'radial-gradient(ellipse at center, rgba(66, 133, 244, 0.05) 0%, transparent 70%)',
+                    background: 'radial-gradient(ellipse at center, rgba(99, 102, 241, 0.05) 0%, transparent 70%)',
                 }}
             />
         );
