@@ -67,11 +67,12 @@ export function CareersPageClient({ company, settings, sections, jobs }: Careers
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
+    // Initialize simple loading state
+    React.useEffect(() => {
+        setIsLoaded(true);
+    }, []);
+
     if (!isLoaded) {
-        // Initialize simple loading state
-        React.useEffect(() => {
-            setIsLoaded(true);
-        }, []);
 
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
