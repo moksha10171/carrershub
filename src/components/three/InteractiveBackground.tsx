@@ -30,7 +30,7 @@ export default function InteractiveBackground({ className = '' }: InteractiveBac
     }, []);
 
     // Fewer particles on mobile, respect motion preferences
-    const particleCount = isReducedMotion ? 0 : isMobile ? 120 : 300;
+    const particleCount = isReducedMotion ? 0 : isMobile ? 150 : 500;
     const repelRadius = isMobile ? 1.5 : 2.5;
 
     // Skip rendering if user prefers reduced motion
@@ -39,7 +39,7 @@ export default function InteractiveBackground({ className = '' }: InteractiveBac
             <div
                 className={`absolute inset-0 z-0 ${className}`}
                 style={{
-                    background: 'radial-gradient(ellipse at center, rgba(99, 102, 241, 0.03) 0%, transparent 70%)',
+                    background: 'radial-gradient(ellipse at center, rgba(66, 133, 244, 0.05) 0%, transparent 70%)',
                 }}
             />
         );
@@ -53,8 +53,8 @@ export default function InteractiveBackground({ className = '' }: InteractiveBac
         >
             <Canvas
                 camera={{
-                    position: [0, 0, 12],
-                    fov: 60,
+                    position: [0, 0, 15],
+                    fov: 50,
                     near: 0.1,
                     far: 100,
                 }}

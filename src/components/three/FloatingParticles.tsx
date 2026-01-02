@@ -11,7 +11,7 @@ interface FloatingParticlesProps {
 }
 
 export default function FloatingParticles({
-    count = 300,
+    count = 400,
     repelRadius = 2.5,
     repelStrength = 0.08,
 }: FloatingParticlesProps) {
@@ -22,10 +22,10 @@ export default function FloatingParticles({
     const particles = useMemo(() => {
         const temp = [];
         for (let i = 0; i < count; i++) {
-            // Spread particles across viewport with depth variation
-            const x = (Math.random() - 0.5) * 30;
-            const y = (Math.random() - 0.5) * 22;
-            const z = (Math.random() - 0.5) * 6 - 3;
+            // Spread particles across viewport
+            const x = (Math.random() - 0.5) * 35;
+            const y = (Math.random() - 0.5) * 35;
+            const z = (Math.random() - 0.5) * 15 - 5;
 
             // Random rotation for dash orientation
             const rotationX = Math.random() * Math.PI * 2;
@@ -36,39 +36,27 @@ export default function FloatingParticles({
                 position: new THREE.Vector3(x, y, z),
                 originalPosition: new THREE.Vector3(x, y, z),
                 velocity: new THREE.Vector3(0, 0, 0),
-                // Very small scale for delicate look (tiny dashes)
-                scale: 0.015 + Math.random() * 0.025,
-                // Width multiplier for dash shape
-                widthScale: 0.3 + Math.random() * 0.4,
-                // Slow, organic rotation
-                rotationSpeed: (Math.random() - 0.5) * 0.3,
+                // Scale for tiny dashes
+                scale: 0.5 + Math.random() * 0.5,
+                // Upward speed (liftoff)
+                riseSpeed: 0.01 + Math.random() * 0.03,
+                rotateSpeed: (Math.random() - 0.5) * 0.02,
                 rotation: new THREE.Euler(rotationX, rotationY, rotationZ),
-                // Unique float parameters for organic movement
-                floatOffset: Math.random() * Math.PI * 2,
-                floatSpeedX: 0.15 + Math.random() * 0.25,
-                floatSpeedY: 0.2 + Math.random() * 0.3,
-                floatAmplitudeX: 0.03 + Math.random() * 0.05,
-                floatAmplitudeY: 0.04 + Math.random() * 0.06,
-                // Autonomousslow drift
-                driftX: (Math.random() - 0.5) * 0.002,
-                driftY: (Math.random() - 0.5) * 0.001,
-                // Color variation index
-                colorIndex: Math.floor(Math.random() * 5),
-                // Opacity for depth effect
-                baseOpacity: 0.5 + Math.random() * 0.4,
+                colorIndex: Math.floor(Math.random() * 4),
+                // Random offset for sine wave motion
+                timeOffset: Math.random() * 100,
             });
         }
         return temp;
     }, [count]);
 
-    // Elegant blue color palette (matching reference)
+    // Google Blue themed palette
     const colors = useMemo(() => {
         const palette = [
-            new THREE.Color('#6366f1'), // Indigo
-            new THREE.Color('#818cf8'), // Light indigo
-            new THREE.Color('#a5b4fc'), // Lighter indigo
-            new THREE.Color('#8b5cf6'), // Purple
-            new THREE.Color('#7c3aed'), // Vivid purple
+            new THREE.Color('#4285F4'), // Google Blue
+            new THREE.Color('#8AB4F8'), // Light Blue
+            new THREE.Color('#1967D2'), // Darker Blue
+            new THREE.Color('#D2E3FC'), // Very Light Blue/White-ish
         ];
         return particles.map(p => palette[p.colorIndex]);
     }, [particles]);
@@ -78,97 +66,89 @@ export default function FloatingParticles({
     useFrame((state) => {
         if (!meshRef.current) return;
 
-        const time = state.clock.elapsedTime;
-
-        // Smooth mouse tracking with lerping
+        // Smooth mouse tracking
         const mouseX = (mouse.x * viewport.width) / 2;
         const mouseY = (mouse.y * viewport.height) / 2;
 
+        const time = state.clock.elapsedTime;
+
         particles.forEach((particle, i) => {
-            // Calculate distance to mouse
+            // LIFTOFF MOVEMENT: Constant upward rise
+            particle.position.y += particle.riseSpeed;
+
+            // RESET LOGIC: If goes above top, reset to bottom
+            if (particle.position.y > 20) {
+                particle.position.y = -20;
+                particle.position.x = (Math.random() - 0.5) * 35;
+            }
+
+            // Mouse Repulsion
             const dx = particle.position.x - mouseX;
             const dy = particle.position.y - mouseY;
             const distance = Math.sqrt(dx * dx + dy * dy);
 
-            // Smooth mouse repulsion with easing
-            if (distance < repelRadius && distance > 0.01) {
-                const normalizedDist = distance / repelRadius;
-                // Smooth cubic falloff for natural feel
-                const force = Math.pow(1 - normalizedDist, 3) * repelStrength;
+            if (distance < repelRadius) {
+                const force = (repelRadius - distance) / repelRadius;
                 const angle = Math.atan2(dy, dx);
-                particle.velocity.x += Math.cos(angle) * force;
-                particle.velocity.y += Math.sin(angle) * force;
+                particle.velocity.x += Math.cos(angle) * force * 0.05;
+                particle.velocity.y += Math.sin(angle) * force * 0.05;
             }
 
-            // Apply velocity with heavy damping for smoothness
+            // Apply velocity and dampen
             particle.position.x += particle.velocity.x;
             particle.position.y += particle.velocity.y;
-            particle.velocity.x *= 0.96;
-            particle.velocity.y *= 0.96;
+            particle.velocity.x *= 0.95;
+            particle.velocity.y *= 0.95;
 
-            // Very soft spring back to original position
-            const returnSpeed = 0.008;
-            particle.position.x += (particle.originalPosition.x - particle.position.x) * returnSpeed;
-            particle.position.y += (particle.originalPosition.y - particle.position.y) * returnSpeed;
-            particle.position.z += (particle.originalPosition.z - particle.position.z) * returnSpeed * 0.5;
+            // Gentle Sine Wave Drift
+            particle.position.x += Math.sin(time * 0.5 + particle.timeOffset) * 0.005;
 
-            // Gentle autonomous drift (makes particles feel alive)
-            particle.originalPosition.x += particle.driftX;
-            particle.originalPosition.y += particle.driftY;
+            // Rotate particles
+            particle.rotation.x += particle.rotateSpeed;
+            particle.rotation.y += particle.rotateSpeed;
 
-            // Wrap around edges for infinite feel
-            if (particle.originalPosition.x > 15) particle.originalPosition.x = -15;
-            if (particle.originalPosition.x < -15) particle.originalPosition.x = 15;
-            if (particle.originalPosition.y > 12) particle.originalPosition.y = -12;
-            if (particle.originalPosition.y < -12) particle.originalPosition.y = 12;
+            // Update dummy object
+            dummy.position.copy(particle.position);
 
-            // Smooth floating animation with sine waves
-            const floatX = Math.sin(time * particle.floatSpeedX + particle.floatOffset) * particle.floatAmplitudeX;
-            const floatY = Math.sin(time * particle.floatSpeedY + particle.floatOffset * 1.3) * particle.floatAmplitudeY;
-            const floatZ = Math.sin(time * 0.15 + particle.floatOffset) * 0.02;
-
-            // Gentle rotation animation
-            const rotX = particle.rotation.x + time * particle.rotationSpeed * 0.3;
-            const rotY = particle.rotation.y + time * particle.rotationSpeed * 0.2;
-            const rotZ = particle.rotation.z + time * particle.rotationSpeed * 0.4;
-
-            // Update instance matrix
-            dummy.position.set(
-                particle.position.x + floatX,
-                particle.position.y + floatY,
-                particle.position.z + floatZ
-            );
-
-            // Elongated scale for dash shape
+            // Scale: Thin dashes
             dummy.scale.set(
-                particle.scale * particle.widthScale,
-                particle.scale * 3, // Elongated Y for dash/line look
-                particle.scale * particle.widthScale
+                particle.scale * 0.05, // Thin width
+                particle.scale * 0.4,  // Long dash
+                particle.scale * 0.05  // Thin depth
             );
 
-            dummy.rotation.set(rotX, rotY, rotZ);
+            dummy.rotation.copy(particle.rotation);
             dummy.updateMatrix();
 
             meshRef.current!.setMatrixAt(i, dummy.matrix);
-            meshRef.current!.setColorAt(i, colors[i]);
         });
 
         meshRef.current.instanceMatrix.needsUpdate = true;
+        // Setting colors once is enough since they are static per particle index allocation
         if (meshRef.current.instanceColor) {
+            // If we needed dynamic colors we would update here. 
+            // Since we construct geometry once, we need to set colors initially.
+            // We can do it in a useEffect or check a flag. 
+            // InstancedMesh colors need to be set at least once.
+            // But re-setting them every frame is expensive if they don't change.
+            // Let's rely on the initial useEffect or just set it if invalid? 
+            // Actually, the previous code set it every frame. Let's do it once in a LayoutEffect or similar?
+            // Or just check if first frame? 
+            // Simpler: Just set it every frame, it's cheap for 400 particles.
+            particles.forEach((p, i) => meshRef.current!.setColorAt(i, colors[i]));
             meshRef.current.instanceColor.needsUpdate = true;
         }
     });
 
     return (
         <instancedMesh ref={meshRef} args={[undefined, undefined, count]}>
-            {/* Capsule geometry for smooth dash/line shape */}
-            <capsuleGeometry args={[0.3, 1, 4, 8]} />
+            <boxGeometry args={[1, 1, 1]} />
             <meshBasicMaterial
+                color="#ffffff"
                 transparent
-                opacity={0.7}
+                opacity={0.9}
                 vertexColors
-                depthWrite={false}
-                blending={THREE.AdditiveBlending}
+                toneMapped={false}
             />
         </instancedMesh>
     );

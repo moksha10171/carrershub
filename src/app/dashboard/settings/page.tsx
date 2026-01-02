@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-import { User, Lock, Mail, ChevronLeft, LogOut, CheckCircle, AlertCircle } from 'lucide-react';
+import { User, Lock, Mail, ChevronLeft, LogOut, CheckCircle, AlertCircle, Trash2, Building } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 
@@ -18,6 +18,10 @@ export default function SettingsPage() {
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
     const [nameMessage, setNameMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
     const [passwords, setPasswords] = useState({ new: '', confirm: '' });
+    const [company, setCompany] = useState<any>(null);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deleteConfirmText, setDeleteConfirmText] = useState('');
+    const [isDeleting, setIsDeleting] = useState(false);
     const router = useRouter();
     const supabase = createClient();
 
@@ -30,6 +34,18 @@ export default function SettingsPage() {
             }
             setUser(user);
             setFullName(user.user_metadata?.full_name || '');
+
+            // Fetch user's company
+            const { data: companyData } = await supabase
+                .from('companies')
+                .select('*')
+                .eq('user_id', user.id)
+                .single();
+
+            if (companyData) {
+                setCompany(companyData);
+            }
+
             setLoading(false);
         };
         getUser();
@@ -96,6 +112,38 @@ export default function SettingsPage() {
     const handleSignOut = async () => {
         await supabase.auth.signOut();
         router.push('/login');
+    };
+
+    const handleDeleteCompany = async () => {
+        if (!company || deleteConfirmText !== company.name) {
+            return;
+        }
+
+        setIsDeleting(true);
+        try {
+            const response = await fetch('/api/companies', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'delete_company',
+                    company_id: company.id,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.error || 'Failed to delete company');
+            }
+
+            // Redirect to onboarding after successful deletion
+            router.push('/onboarding');
+        } catch (error: any) {
+            setMessage({ type: 'error', text: error.message || 'Failed to delete company.' });
+            setShowDeleteModal(false);
+        } finally {
+            setIsDeleting(false);
+        }
     };
 
     if (loading) {
@@ -266,9 +314,102 @@ export default function SettingsPage() {
                                 </div>
                             </CardContent>
                         </Card>
+
+                        {/* Danger Zone - Delete Company */}
+                        {company && (
+                            <Card className="border-red-500 dark:border-red-700">
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
+                                        <Trash2 className="h-5 w-5" />
+                                        Danger Zone
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                                        <div className="flex items-start gap-3">
+                                            <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+                                            <div>
+                                                <h4 className="font-medium text-red-800 dark:text-red-200">
+                                                    Delete Company Page
+                                                </h4>
+                                                <p className="text-sm text-red-700 dark:text-red-300 mt-1">
+                                                    This will permanently delete your company page <strong>{company.name}</strong> and all associated data including jobs, settings, and content sections. This action cannot be undone.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-end">
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => setShowDeleteModal(true)}
+                                            className="text-red-600 border-red-500 hover:bg-red-50 dark:border-red-700 dark:hover:bg-red-900/20"
+                                        >
+                                            <Trash2 className="h-4 w-4 mr-2" />
+                                            Delete Company
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
                     </div>
                 </div>
             </main>
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteModal && company && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setShowDeleteModal(false)}>
+                    <div
+                        className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-md w-full p-6"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-3 rounded-full bg-red-100 dark:bg-red-900/30">
+                                <Trash2 className="h-6 w-6 text-red-600 dark:text-red-400" />
+                            </div>
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                                Delete Company?
+                            </h2>
+                        </div>
+
+                        <p className="text-gray-600 dark:text-gray-400 mb-4">
+                            This will permanently delete <strong className="text-gray-900 dark:text-white">{company.name}</strong> and all its data. This action cannot be undone.
+                        </p>
+
+                        <div className="mb-6">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Type <strong>{company.name}</strong> to confirm:
+                            </label>
+                            <Input
+                                type="text"
+                                value={deleteConfirmText}
+                                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                                placeholder={company.name}
+                                className="border-red-300 dark:border-red-700 focus:ring-red-500 focus:border-red-500"
+                            />
+                        </div>
+
+                        <div className="flex gap-3">
+                            <Button
+                                variant="outline"
+                                className="flex-1"
+                                onClick={() => {
+                                    setShowDeleteModal(false);
+                                    setDeleteConfirmText('');
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                                onClick={handleDeleteCompany}
+                                disabled={deleteConfirmText !== company.name || isDeleting}
+                            >
+                                {isDeleting ? 'Deleting...' : 'Delete Forever'}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

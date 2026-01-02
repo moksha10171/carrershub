@@ -219,6 +219,43 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: true, message: 'Company updated successfully' });
         }
 
+        // Delete company (cascade deletes jobs, settings, sections via FK constraints)
+        if (action === 'delete_company') {
+            const { company_id } = body;
+
+            if (!company_id) {
+                return NextResponse.json({ success: false, error: 'Company ID required' }, { status: 400 });
+            }
+
+            // Verify ownership
+            const { data: company } = await supabase
+                .from('companies')
+                .select('id, user_id, name')
+                .eq('id', company_id)
+                .single();
+
+            if (!company) {
+                return NextResponse.json({ success: false, error: 'Company not found' }, { status: 404 });
+            }
+
+            if (company.user_id !== user.id) {
+                return NextResponse.json({ success: false, error: 'Not authorized to delete this company' }, { status: 403 });
+            }
+
+            // Delete company (cascade will handle related data)
+            const { error: deleteError } = await supabase
+                .from('companies')
+                .delete()
+                .eq('id', company_id);
+
+            if (deleteError) {
+                console.error('Failed to delete company:', deleteError);
+                return NextResponse.json({ success: false, error: 'Failed to delete company' }, { status: 500 });
+            }
+
+            return NextResponse.json({ success: true, message: `Company "${company.name}" deleted successfully` });
+        }
+
         return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });
     } catch (error: any) {
         console.error('Companies POST error:', error);
