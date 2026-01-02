@@ -69,7 +69,7 @@ export default function LoginPage() {
                     {mounted && <GeometricBackground color="#4f46e5" isDark={true} />}
                 </Canvas>
                 {/* Gradients for text readability */}
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-gray-900/80 opacity-90" />
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-50/90 via-transparent to-gray-50/90 dark:from-gray-950/90 dark:to-gray-950/90 opacity-80" />
             </div>
 
 

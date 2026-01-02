@@ -13,8 +13,8 @@ export default function GeometricBackground({ color = '#4F46E5', isDark = false 
     const mesh = useRef<THREE.InstancedMesh>(null);
 
     // Grid settings
-    const gridSize = 40;
-    const separation = 1.2;
+    const gridSize = 24; // Reduced from 40 for cleaner look
+    const separation = 2.0; // Increased spacing
     const offset = (gridSize * separation) / 2;
     const count = gridSize * gridSize;
 
@@ -22,7 +22,7 @@ export default function GeometricBackground({ color = '#4F46E5', isDark = false 
 
     useFrame((state) => {
         if (!mesh.current) return;
-        const time = state.clock.getElapsedTime() * 0.8; // Speed
+        const time = state.clock.getElapsedTime() * 0.4; // Slower, more relaxing
 
         let i = 0;
         for (let x = 0; x < gridSize; x++) {
@@ -48,7 +48,7 @@ export default function GeometricBackground({ color = '#4F46E5', isDark = false 
                 dummy.rotation.z = Math.cos(time * 0.5 + zPos * 0.1) * 0.5;
 
                 // Scale based on height (peaks are larger)
-                const scale = Math.max(0.2, (yPos + 4) * 0.18);
+                const scale = Math.max(0.1, (yPos + 4) * 0.12); // Smaller particles
                 dummy.scale.set(scale, scale, scale);
 
                 dummy.updateMatrix();
@@ -67,7 +67,7 @@ export default function GeometricBackground({ color = '#4F46E5', isDark = false 
                     roughness={0.1}
                     metalness={0.8}
                     emissive={color}
-                    emissiveIntensity={isDark ? 0.4 : 0.2}
+                    emissiveIntensity={isDark ? 0.6 : 0.2}
                     wireframe={false}
                 />
             </instancedMesh>
