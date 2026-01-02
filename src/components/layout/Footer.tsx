@@ -32,7 +32,7 @@ const footerLinks = {
 
 export function Footer() {
     return (
-        <footer className="bg-gray-900 text-gray-300">
+        <footer className="bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-300 border-t border-gray-200 dark:border-gray-800">
             {/* Main Footer */}
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8 lg:gap-12">
@@ -40,9 +40,9 @@ export function Footer() {
                     <div className="col-span-2">
                         <Link href="/" className="flex items-center gap-2 mb-4">
                             <img src="/logo.png" alt="CareerHub" className="h-8 w-8 rounded-lg" />
-                            <span className="text-xl font-bold text-white">CareerHub</span>
+                            <span className="text-xl font-bold text-gray-900 dark:text-white">CareerHub</span>
                         </Link>
-                        <p className="text-gray-400 mb-6 max-w-xs leading-relaxed">
+                        <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-xs leading-relaxed">
                             Build beautiful, branded careers pages that attract top talent and showcase your company culture.
                         </p>
                         <div className="flex items-center gap-4">
@@ -50,7 +50,7 @@ export function Footer() {
                                 href="https://twitter.com"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors"
+                                className="p-2 rounded-lg bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors"
                                 aria-label="Twitter"
                             >
                                 <Twitter className="h-4 w-4" />
@@ -59,7 +59,7 @@ export function Footer() {
                                 href="https://linkedin.com"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors"
+                                className="p-2 rounded-lg bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors"
                                 aria-label="LinkedIn"
                             >
                                 <Linkedin className="h-4 w-4" />
@@ -68,7 +68,7 @@ export function Footer() {
                                 href="https://github.com/moksha10171/carrershub"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors"
+                                className="p-2 rounded-lg bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors"
                                 aria-label="GitHub"
                             >
                                 <Github className="h-4 w-4" />
@@ -78,13 +78,13 @@ export function Footer() {
 
                     {/* Product Links */}
                     <div>
-                        <h3 className="text-white font-semibold mb-4">Product</h3>
+                        <h3 className="text-gray-900 dark:text-white font-semibold mb-4">Product</h3>
                         <ul className="space-y-3">
                             {footerLinks.product.map((link) => (
                                 <li key={link.href}>
                                     <Link
                                         href={link.href}
-                                        className="text-gray-400 hover:text-white transition-colors text-sm"
+                                        className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors text-sm"
                                     >
                                         {link.label}
                                     </Link>
@@ -95,13 +95,13 @@ export function Footer() {
 
                     {/* Company Links */}
                     <div>
-                        <h3 className="text-white font-semibold mb-4">Company</h3>
+                        <h3 className="text-gray-900 dark:text-white font-semibold mb-4">Company</h3>
                         <ul className="space-y-3">
                             {footerLinks.company.map((link) => (
                                 <li key={link.href}>
                                     <Link
                                         href={link.href}
-                                        className="text-gray-400 hover:text-white transition-colors text-sm"
+                                        className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors text-sm"
                                     >
                                         {link.label}
                                     </Link>
@@ -112,13 +112,13 @@ export function Footer() {
 
                     {/* Legal Links */}
                     <div>
-                        <h3 className="text-white font-semibold mb-4">Legal</h3>
+                        <h3 className="text-gray-900 dark:text-white font-semibold mb-4">Legal</h3>
                         <ul className="space-y-3">
                             {footerLinks.legal.map((link) => (
                                 <li key={link.href}>
                                     <Link
                                         href={link.href}
-                                        className="text-gray-400 hover:text-white transition-colors text-sm"
+                                        className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors text-sm"
                                     >
                                         {link.label}
                                     </Link>
@@ -129,23 +129,23 @@ export function Footer() {
 
                     {/* Contact Info */}
                     <div className="col-span-2 md:col-span-1">
-                        <h3 className="text-white font-semibold mb-4">Contact</h3>
+                        <h3 className="text-gray-900 dark:text-white font-semibold mb-4">Contact</h3>
                         <ul className="space-y-3">
                             <li className="flex items-center gap-2 text-sm">
                                 <Mail className="h-4 w-4 text-gray-500" />
-                                <a href="mailto:hello@careerhub.com" className="text-gray-400 hover:text-white transition-colors">
+                                <a href="mailto:hello@careerhub.com" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                                     hello@careerhub.com
                                 </a>
                             </li>
                             <li className="flex items-center gap-2 text-sm">
                                 <Phone className="h-4 w-4 text-gray-500" />
-                                <a href="tel:+1234567890" className="text-gray-400 hover:text-white transition-colors">
+                                <a href="tel:+1234567890" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                                     +1 (234) 567-890
                                 </a>
                             </li>
                             <li className="flex items-start gap-2 text-sm">
                                 <MapPin className="h-4 w-4 text-gray-500 mt-0.5" />
-                                <span className="text-gray-400">
+                                <span className="text-gray-600 dark:text-gray-400">
                                     123 Innovation Drive<br />
                                     San Francisco, CA 94107
                                 </span>
@@ -156,7 +156,7 @@ export function Footer() {
             </div>
 
             {/* Bottom Bar */}
-            <div className="border-t border-gray-800">
+            <div className="border-t border-gray-200 dark:border-gray-800">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                         <p className="text-gray-500 text-sm text-center sm:text-left">
