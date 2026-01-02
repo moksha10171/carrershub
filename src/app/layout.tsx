@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { ThemeProvider } from '@/components/providers/ThemeProvider';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,14 +22,21 @@ export default function RootLayout({
     return (
         <html lang="en" suppressHydrationWarning>
             <body className={inter.className}>
-                <a href="#main-content" className="skip-link">
-                    Skip to main content
-                </a>
-                <Header />
-                <main id="main-content">
-                    {children}
-                </main>
-                <Footer />
+                <ThemeProvider
+                    attribute="class"
+                    defaultTheme="system"
+                    enableSystem
+                    disableTransitionOnChange
+                >
+                    <a href="#main-content" className="skip-link">
+                        Skip to main content
+                    </a>
+                    <Header />
+                    <main id="main-content">
+                        {children}
+                    </main>
+                    <Footer />
+                </ThemeProvider>
             </body>
         </html>
     );
