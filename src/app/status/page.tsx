@@ -22,6 +22,18 @@ export default function StatusPage() {
 
     const incidents = [
         {
+            title: 'System Upgrade: Global Search & DB Optimization',
+            date: 'Jan 02, 2026',
+            time: '07:00 UTC - 08:00 UTC',
+            status: 'resolved',
+            severity: 'low',
+            desc: 'Successfully deployed Global Search functionality and optimized database query paths. Removed legacy demo data fallbacks to ensure data integrity.',
+            updates: [
+                { time: '08:00 UTC', message: 'Upgrade completed. All systems operational.' },
+                { time: '07:00 UTC', message: 'Deployment started.' },
+            ],
+        },
+        {
             title: 'Scheduled Maintenance Completed',
             date: 'Dec 25, 2025',
             time: '02:00 UTC - 03:30 UTC',

@@ -100,6 +100,17 @@ export default function PreviewPage() {
         );
     }
 
+    if (!company) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 gap-4">
+                <p className="text-gray-500">Company not found.</p>
+                <Link href="/dashboard">
+                    <Button variant="outline">Back to Dashboard</Button>
+                </Link>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 overflow-x-hidden">
             {/* Preview Toolbar */}

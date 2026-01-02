@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 import { Briefcase, Sparkles, ArrowRight, CheckCircle2, Palette, Filter, Zap, Share2, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { GlobalSearchSection } from '@/components/home/GlobalSearchSection';
 
 // Dynamically import Three.js background to avoid SSR issues
 const InteractiveBackground = dynamic(
@@ -90,6 +91,9 @@ export default function HomePage() {
                     </motion.div>
                 </div>
             </section>
+
+            {/* Global Search Section */}
+            <GlobalSearchSection />
 
             {/* Visual Section: Left-Right Layout */}
             <section className="py-24 bg-white dark:bg-gray-950 overflow-hidden">

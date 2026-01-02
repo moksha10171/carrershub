@@ -6,6 +6,7 @@ Allow: /
 Disallow: /dashboard
 Disallow: /login
 Disallow: /signup
+Disallow: /onboarding
 Disallow: /api/
 
 # Allow public careers pages

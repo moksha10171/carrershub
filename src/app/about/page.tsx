@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { Users, Target, Heart, Award, Zap, Globe } from 'lucide-react';
+import { Users, Target, Heart, Award, Zap, Globe, Briefcase, Smile } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 export const metadata: Metadata = {
@@ -32,10 +32,10 @@ const values = [
 ];
 
 const stats = [
-    { value: '500+', label: 'Companies Trust Us' },
-    { value: '10K+', label: 'Jobs Posted' },
-    { value: '1M+', label: 'Candidates Reached' },
-    { value: '98%', label: 'Customer Satisfaction' },
+    { value: '500+', label: 'Companies Trust Us', icon: Users },
+    { value: '10K+', label: 'Jobs Posted', icon: Briefcase },
+    { value: '1M+', label: 'Candidates Reached', icon: Globe },
+    { value: '98%', label: 'Customer Satisfaction', icon: Smile },
 ];
 
 export default function AboutPage() {
@@ -96,7 +96,10 @@ export default function AboutPage() {
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
                         {stats.map((stat) => (
-                            <div key={stat.label} className="text-center">
+                            <div key={stat.label} className="text-center group">
+                                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-white dark:bg-gray-800 shadow-sm mb-4 group-hover:scale-110 transition-transform">
+                                    <stat.icon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                                </div>
                                 <div className="text-3xl sm:text-4xl font-bold text-indigo-600 dark:text-indigo-400 mb-2">
                                     {stat.value}
                                 </div>
@@ -124,7 +127,7 @@ export default function AboutPage() {
                         {values.map((value) => (
                             <div
                                 key={value.title}
-                                className="p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm"
+                                className="p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow"
                             >
                                 <div className="w-12 h-12 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center mb-4">
                                     <value.icon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
@@ -141,21 +144,30 @@ export default function AboutPage() {
                 </div>
             </section>
 
-            {/* Team */}
-            <section className="py-16 bg-gray-50 dark:bg-gray-900">
+            {/* CTA & Join Team */}
+            <section className="py-24 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="max-w-3xl mx-auto text-center">
-                        <Users className="h-12 w-12 text-indigo-600 dark:text-indigo-400 mx-auto mb-4" />
-                        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-4">
-                            Join Our Team
+                    <div className="max-w-4xl mx-auto text-center">
+                        <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-6">
+                            Ready to transform your hiring?
                         </h2>
-                        <p className="text-gray-600 dark:text-gray-300 mb-8">
-                            We&apos;re always looking for talented people who share our passion
-                            for building great products. Check out our open positions!
+                        <p className="text-xl text-gray-600 dark:text-gray-300 mb-10 max-w-2xl mx-auto">
+                            Join hundreds of companies building their dream teams with CareerHub.
+                            Or join us and help build the future of hiring.
                         </p>
-                        <Link href="/techcorp/careers">
-                            <Button size="lg">View Open Positions</Button>
-                        </Link>
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                            <Link href="/onboarding">
+                                <Button size="lg" className="min-w-[200px] h-14 text-lg">
+                                    Start Hiring Now
+                                </Button>
+                            </Link>
+                            <Link href="/techcorp/careers">
+                                <Button variant="outline" size="lg" className="min-w-[200px] h-14 text-lg flex items-center gap-2">
+                                    <Users className="h-5 w-5" />
+                                    Join Our Team
+                                </Button>
+                            </Link>
+                        </div>
                     </div>
                 </div>
             </section>

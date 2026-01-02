@@ -76,6 +76,10 @@ export default function HelpPage() {
             question: 'What happens if I exceed my plan limits?',
             answer: 'You\'ll receive an email notification when approaching limits. You can either upgrade your plan or archive old jobs to stay within limits. We never unpublish your live jobs without prior notice.',
         },
+        {
+            question: 'How can candidates find my jobs?',
+            answer: 'Besides your direct careers page URL, all published jobs are automatically indexed in our Global Search on the homepage. Candidates can search by company name or job title to find your open positions.',
+        },
     ];
 
     const gettingStarted = [
@@ -102,7 +106,7 @@ export default function HelpPage() {
         {
             step: 5,
             title: 'Publish & Share',
-            desc: 'Launch your careers page and share it with the world!',
+            desc: 'Launch your careers page! Your jobs are effectively indexed in our Global Search automatically.',
         },
     ];
 
