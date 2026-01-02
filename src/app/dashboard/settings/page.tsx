@@ -280,27 +280,35 @@ export default function SettingsPage() {
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                             New Password
                                         </label>
-                                        <Input
-                                            type="password"
-                                            value={passwords.new}
-                                            onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
-                                            placeholder="Enter new password"
-                                            required
-                                            minLength={6}
-                                        />
+                                        <div className="relative">
+                                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                            <Input
+                                                type="password"
+                                                value={passwords.new}
+                                                onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
+                                                placeholder="Enter new password"
+                                                required
+                                                minLength={6}
+                                                className="pl-10"
+                                            />
+                                        </div>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                             Confirm New Password
                                         </label>
-                                        <Input
-                                            type="password"
-                                            value={passwords.confirm}
-                                            onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
-                                            placeholder="Confirm new password"
-                                            required
-                                            minLength={6}
-                                        />
+                                        <div className="relative">
+                                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                            <Input
+                                                type="password"
+                                                value={passwords.confirm}
+                                                onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
+                                                placeholder="Confirm new password"
+                                                required
+                                                minLength={6}
+                                                className="pl-10"
+                                            />
+                                        </div>
                                     </div>
 
                                     {message && (
