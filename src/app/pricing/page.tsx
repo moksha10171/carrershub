@@ -104,7 +104,7 @@ export default function PricingPage() {
                                     ))}
                                 </ul>
                                 <Button
-                                    className="w-full"
+                                    className={`w-full ${plan.popular ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 border-0 shadow-lg shadow-indigo-500/25 text-white' : ''}`}
                                     variant={plan.popular ? 'primary' : 'outline'}
                                 >
                                     Get Started

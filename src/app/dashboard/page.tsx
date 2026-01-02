@@ -27,6 +27,8 @@ export default function DashboardPage() {
         { label: 'Locations', value: '0', icon: Globe, change: 'Loading...', color: 'blue' },
         { label: 'Remote Jobs', value: '0', icon: Eye, change: 'Loading...', color: 'green' },
     ]);
+    const [recentJobs, setRecentJobs] = useState<any[]>([]);
+    const [analyticsData, setAnalyticsData] = useState<any>(null);
 
     // Check authentication and fetch company
     useEffect(() => {
@@ -79,7 +81,34 @@ export default function DashboardPage() {
                 console.error('Failed to fetch stats:', error);
             }
         };
+
+        const fetchRecentJobs = async () => {
+            try {
+                const response = await fetch(`/api/jobs?company_id=${company.id}&limit=3`);
+                const data = await response.json();
+                if (data.jobs) {
+                    setRecentJobs(data.jobs.slice(0, 3));
+                }
+            } catch (error) {
+                console.error('Failed to fetch recent jobs:', error);
+            }
+        };
+
+        const fetchAnalytics = async () => {
+            try {
+                const response = await fetch(`/api/analytics?company_id=${company.id}&range=7d`);
+                const data = await response.json();
+                if (data.success && data.data) {
+                    setAnalyticsData(data.data.overview);
+                }
+            } catch (error) {
+                console.error('Failed to fetch analytics:', error);
+            }
+        };
+
         fetchStats();
+        fetchRecentJobs();
+        fetchAnalytics();
     }, [company]);
 
     // Dynamic quick actions based on company
@@ -291,21 +320,24 @@ export default function DashboardPage() {
                             </CardHeader>
                             <CardContent className="p-6 pt-0">
                                 <div className="space-y-4">
-                                    {[
-                                        { title: 'Full Stack Engineer', location: 'Berlin, Germany', status: 'Active' },
-                                        { title: 'Product Designer', location: 'Boston, United States', status: 'Active' },
-                                        { title: 'Marketing Manager', location: 'Dubai, UAE', status: 'Active' },
-                                    ].map((job) => (
-                                        <div key={job.title} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-                                            <div>
-                                                <p className="font-medium text-gray-900 dark:text-white">{job.title}</p>
-                                                <p className="text-sm text-gray-500 dark:text-gray-400">{job.location}</p>
+                                    {recentJobs.length > 0 ? (
+                                        recentJobs.map((job) => (
+                                            <div key={job.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                                                <div>
+                                                    <p className="font-medium text-gray-900 dark:text-white">{job.title}</p>
+                                                    <p className="text-sm text-gray-500 dark:text-gray-400">{job.location}</p>
+                                                </div>
+                                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${job.is_active ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}`}>
+                                                    {job.is_active ? 'Active' : 'Hidden'}
+                                                </span>
                                             </div>
-                                            <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                                                {job.status}
-                                            </span>
+                                        ))
+                                    ) : (
+                                        <div className="text-center py-6 text-gray-500 dark:text-gray-400">
+                                            <p>No jobs posted yet.</p>
+                                            <Link href="/dashboard/jobs" className="text-indigo-600 dark:text-indigo-400 hover:underline text-sm">Post your first job →</Link>
                                         </div>
-                                    ))}
+                                    )}
                                 </div>
                                 <Link href="/dashboard/jobs">
                                     <Button variant="ghost" className="w-full mt-4">
@@ -325,20 +357,42 @@ export default function DashboardPage() {
                             </CardHeader>
                             <CardContent className="p-6 pt-0">
                                 <div className="space-y-4">
-                                    {[
-                                        { label: 'Page Views (7 days)', value: '2,431', change: '+18%' },
-                                        { label: 'Unique Visitors', value: '1,892', change: '+12%' },
-                                        { label: 'Avg. Time on Page', value: '3m 24s', change: '+5%' },
-                                        { label: 'Job Click Rate', value: '34%', change: '+8%' },
-                                    ].map((metric) => (
-                                        <div key={metric.label} className="flex items-center justify-between">
-                                            <span className="text-sm text-gray-600 dark:text-gray-400">{metric.label}</span>
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-medium text-gray-900 dark:text-white">{metric.value}</span>
-                                                <span className="text-xs text-green-600 dark:text-green-400">{metric.change}</span>
+                                    {analyticsData ? (
+                                        <>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm text-gray-600 dark:text-gray-400">Page Views (7 days)</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-medium text-gray-900 dark:text-white">{analyticsData.totalViews?.toLocaleString() || '0'}</span>
+                                                    <span className="text-xs text-green-600 dark:text-green-400">{analyticsData.viewsChange || '+0%'}</span>
+                                                </div>
                                             </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm text-gray-600 dark:text-gray-400">Unique Visitors</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-medium text-gray-900 dark:text-white">{analyticsData.uniqueVisitors?.toLocaleString() || '0'}</span>
+                                                    <span className="text-xs text-green-600 dark:text-green-400">{analyticsData.visitorsChange || '+0%'}</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm text-gray-600 dark:text-gray-400">Avg. Time on Page</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-medium text-gray-900 dark:text-white">{analyticsData.avgTimeOnPage || '0s'}</span>
+                                                    <span className="text-xs text-green-600 dark:text-green-400">{analyticsData.timeChange || '+0%'}</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm text-gray-600 dark:text-gray-400">Applications</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-medium text-gray-900 dark:text-white">{analyticsData.totalApplications?.toLocaleString() || '0'}</span>
+                                                    <span className="text-xs text-green-600 dark:text-green-400">{analyticsData.applicationsChange || '+0%'}</span>
+                                                </div>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="text-center py-6 text-gray-500 dark:text-gray-400">
+                                            <p>Loading analytics...</p>
                                         </div>
-                                    ))}
+                                    )}
                                 </div>
                                 <Link href="/dashboard/analytics">
                                     <Button variant="ghost" className="w-full mt-4">

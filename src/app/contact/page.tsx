@@ -223,7 +223,7 @@ export default function ContactPage() {
 
                                                 <Button
                                                     type="submit"
-                                                    className="w-full sm:w-auto"
+                                                    className="w-full sm:w-auto bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 border-0 shadow-lg shadow-indigo-500/25"
                                                     isLoading={isSubmitting}
                                                 >
                                                     <Send className="h-4 w-4" />

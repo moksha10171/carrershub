@@ -305,7 +305,7 @@ export default function SignupPage() {
 
                                     <Button
                                         type="submit"
-                                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white border-0 shadow-lg shadow-indigo-500/30 transition-all duration-300 transform hover:-translate-y-0.5"
+                                        className="w-full"
                                         size="lg"
                                         isLoading={isLoading}
                                     >
@@ -441,7 +441,7 @@ export default function SignupPage() {
 
                                     <Button
                                         type="submit"
-                                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white border-0 shadow-lg shadow-indigo-500/30 transition-all duration-300 transform hover:-translate-y-0.5"
+                                        className="w-full"
                                         size="lg"
                                         isLoading={isLoading}
                                     >

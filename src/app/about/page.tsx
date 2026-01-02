@@ -157,7 +157,7 @@ export default function AboutPage() {
                         </p>
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                             <Link href="/onboarding">
-                                <Button size="lg" className="min-w-[200px] h-14 text-lg">
+                                <Button size="lg" className="min-w-[200px] h-14 text-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 border-0 shadow-lg shadow-indigo-500/25">
                                     Start Hiring Now
                                 </Button>
                             </Link>
