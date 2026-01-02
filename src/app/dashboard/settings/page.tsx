@@ -146,6 +146,35 @@ export default function SettingsPage() {
         }
     };
 
+    const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+    const [deleteAccountConfirmText, setDeleteAccountConfirmText] = useState('');
+    const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+
+    const handleDeleteAccount = async () => {
+        if (deleteAccountConfirmText !== 'DELETE') return;
+
+        setIsDeletingAccount(true);
+        try {
+            const response = await fetch('/api/user', {
+                method: 'DELETE',
+            });
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.error || 'Failed to delete account');
+            }
+
+            // Sign out and redirect
+            await supabase.auth.signOut();
+            router.push('/login');
+        } catch (error: any) {
+            setMessage({ type: 'error', text: error.message || 'Failed to delete account.' });
+            setShowDeleteAccountModal(false);
+        } finally {
+            setIsDeletingAccount(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
@@ -351,11 +380,46 @@ export default function SettingsPage() {
                                 </CardContent>
                             </Card>
                         )}
+
+                        {/* Danger Zone - Delete Account */}
+                        <Card className="border-red-500 dark:border-red-700">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
+                                    <User className="h-5 w-5" />
+                                    Delete Account
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                                    <div className="flex items-start gap-3">
+                                        <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+                                        <div>
+                                            <h4 className="font-medium text-red-800 dark:text-red-200">
+                                                Delete User Account
+                                            </h4>
+                                            <p className="text-sm text-red-700 dark:text-red-300 mt-1">
+                                                This will permanently delete your user account, login credentials, and all associated data. This action is irreversible.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex justify-end">
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setShowDeleteAccountModal(true)}
+                                        className="text-red-600 border-red-500 hover:bg-red-50 dark:border-red-700 dark:hover:bg-red-900/20"
+                                    >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Delete Account
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
                     </div>
                 </div>
             </main>
 
-            {/* Delete Confirmation Modal */}
+            {/* Delete Company Confirmation Modal */}
             {showDeleteModal && company && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setShowDeleteModal(false)}>
                     <div
@@ -405,6 +469,62 @@ export default function SettingsPage() {
                                 disabled={deleteConfirmText !== company.name || isDeleting}
                             >
                                 {isDeleting ? 'Deleting...' : 'Delete Forever'}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Account Confirmation Modal */}
+            {showDeleteAccountModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setShowDeleteAccountModal(false)}>
+                    <div
+                        className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-md w-full p-6"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-3 rounded-full bg-red-100 dark:bg-red-900/30">
+                                <Trash2 className="h-6 w-6 text-red-600 dark:text-red-400" />
+                            </div>
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                                Delete User Account?
+                            </h2>
+                        </div>
+
+                        <p className="text-gray-600 dark:text-gray-400 mb-4">
+                            This will permanently delete your login and all associated data. This action cannot be undone.
+                        </p>
+
+                        <div className="mb-6">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Type <strong>DELETE</strong> to confirm:
+                            </label>
+                            <Input
+                                type="text"
+                                value={deleteAccountConfirmText}
+                                onChange={(e) => setDeleteAccountConfirmText(e.target.value)}
+                                placeholder="DELETE"
+                                className="border-red-300 dark:border-red-700 focus:ring-red-500 focus:border-red-500"
+                            />
+                        </div>
+
+                        <div className="flex gap-3">
+                            <Button
+                                variant="outline"
+                                className="flex-1"
+                                onClick={() => {
+                                    setShowDeleteAccountModal(false);
+                                    setDeleteAccountConfirmText('');
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                                onClick={handleDeleteAccount}
+                                disabled={deleteAccountConfirmText !== 'DELETE' || isDeletingAccount}
+                            >
+                                {isDeletingAccount ? 'Deleting...' : 'Delete Forever'}
                             </Button>
                         </div>
                     </div>

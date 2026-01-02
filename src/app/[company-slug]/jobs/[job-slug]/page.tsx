@@ -10,6 +10,7 @@ import {
 import { JobActions } from './JobActions';
 import { StickyApply } from './StickyApply';
 import { ApplyButton } from './ApplyButton';
+import { ThemeSetup } from '@/components/company/ThemeSetup';
 
 interface JobPageProps {
     params: Promise<{ 'company-slug': string; 'job-slug': string }>;
@@ -102,15 +103,16 @@ export default async function JobPage({ params }: JobPageProps) {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(jobSchema) }}
             />
+            <ThemeSetup settings={settings} />
             <StickyApply title={job.title} companyName={company.name} />
-            <main className="pt-20 pb-16">
+            <main className="pt-20 lg:pt-24 pb-16">
                 {/* Breadcrumb */}
                 <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
                     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
                         <div className="flex items-center gap-2 text-sm">
                             <Link
                                 href={`/${companySlug}/careers`}
-                                className="flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                                className="flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                             >
                                 <ChevronLeft className="h-4 w-4" />
                                 Back to all jobs
@@ -164,7 +166,7 @@ export default async function JobPage({ params }: JobPageProps) {
 
                                 {/* Tags */}
                                 <div className="flex flex-wrap gap-2 mb-6">
-                                    <span className="px-3 py-1 text-sm rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300">
+                                    <span className="px-3 py-1 text-sm rounded-full bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300">
                                         {job.work_policy}
                                     </span>
                                     <span className="px-3 py-1 text-sm rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
@@ -219,8 +221,8 @@ export default async function JobPage({ params }: JobPageProps) {
                             {/* Company Info */}
                             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                                 <div className="flex items-center gap-3 mb-4">
-                                    <div className="w-12 h-12 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center">
-                                        <Building2 className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                                    <div className="w-12 h-12 rounded-lg bg-primary-50 dark:bg-primary-900/50 flex items-center justify-center">
+                                        <Building2 className="h-6 w-6 text-primary-600 dark:text-primary-400" />
                                     </div>
                                     <div>
                                         <h3 className="font-semibold text-gray-900 dark:text-white">

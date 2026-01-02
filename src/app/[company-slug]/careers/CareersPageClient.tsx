@@ -3,8 +3,9 @@
 import React from 'react';
 import { HeroSection, JobListings, ContentSectionComponent } from '@/components/careers';
 import type { Company, CompanySettings, ContentSection, Job } from '@/types';
-import { Moon, Sun, ArrowUp, AlertCircle } from 'lucide-react';
+import { ArrowUp, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ThemeSetup } from '@/components/company/ThemeSetup';
 
 interface CareersPageClientProps {
     company: Company;
@@ -53,22 +54,6 @@ export function CareersPageClient({ company, settings, sections, jobs }: Careers
     const [showScrollTop, setShowScrollTop] = React.useState(false);
     const [isLoaded, setIsLoaded] = React.useState(false);
 
-    // Initialize dark mode
-    React.useEffect(() => {
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        setIsDark(settings.dark_mode_enabled && prefersDark);
-        setIsLoaded(true);
-    }, [settings.dark_mode_enabled]);
-
-    // Toggle dark mode
-    React.useEffect(() => {
-        if (isDark) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-    }, [isDark]);
-
     // Show scroll to top button
     React.useEffect(() => {
         const handleScroll = () => {
@@ -82,68 +67,25 @@ export function CareersPageClient({ company, settings, sections, jobs }: Careers
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    // Generate custom CSS variables for theming
-    const customStyles = `
-    :root {
-      --primary-50: ${settings.primary_color}10;
-      --primary-100: ${settings.primary_color}20;
-      --primary-200: ${settings.primary_color}40;
-      --primary-300: ${settings.primary_color}60;
-      --primary-400: ${settings.primary_color}80;
-      --primary-500: ${settings.primary_color};
-      --primary-600: ${settings.secondary_color};
-      --primary-700: ${settings.secondary_color}dd;
-      --primary-800: ${settings.secondary_color}bb;
-      --primary-900: ${settings.secondary_color}99;
-    }
-  `;
-
     if (!isLoaded) {
+        // Initialize simple loading state
+        React.useEffect(() => {
+            setIsLoaded(true);
+        }, []);
+
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
             </div>
         );
     }
 
     return (
         <ErrorBoundary>
-            <style dangerouslySetInnerHTML={{ __html: customStyles }} />
+            <ThemeSetup settings={settings} />
 
-            <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-300">
-                {/* Dark mode toggle */}
-                <motion.button
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.5 }}
-                    onClick={() => setIsDark(!isDark)}
-                    className="fixed top-4 right-4 z-50 p-3 rounded-full bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 hover:scale-110 transition-transform focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-                    aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-                >
-                    <AnimatePresence mode="wait">
-                        {isDark ? (
-                            <motion.div
-                                key="sun"
-                                initial={{ rotate: -90, opacity: 0 }}
-                                animate={{ rotate: 0, opacity: 1 }}
-                                exit={{ rotate: 90, opacity: 0 }}
-                                transition={{ duration: 0.2 }}
-                            >
-                                <Sun className="h-5 w-5 text-amber-500" />
-                            </motion.div>
-                        ) : (
-                            <motion.div
-                                key="moon"
-                                initial={{ rotate: 90, opacity: 0 }}
-                                animate={{ rotate: 0, opacity: 1 }}
-                                exit={{ rotate: -90, opacity: 0 }}
-                                transition={{ duration: 0.2 }}
-                            >
-                                <Moon className="h-5 w-5 text-gray-700" />
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </motion.button>
+            <div className="min-h-screen pt-20 lg:pt-24 bg-white dark:bg-gray-900 transition-colors duration-300">
+                {/* Theme Toggle is now handled by ThemeSetup */}
 
                 {/* Hero Section */}
                 <ErrorBoundary fallback={<div className="h-[50vh] bg-primary-600" />}>

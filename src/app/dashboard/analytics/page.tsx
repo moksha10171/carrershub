@@ -64,128 +64,130 @@ export default function AnalyticsPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-12">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Analytics</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                            Track your careers page performance and job applications
-                        </p>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+            <main className="pt-24 pb-12">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                    {/* Header */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Analytics</h1>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                Track your careers page performance and job applications
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <select
+                                value={timeRange}
+                                onChange={(e) => setTimeRange(e.target.value)}
+                                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            >
+                                <option value="7d">Last 7 days</option>
+                                <option value="30d">Last 30 days</option>
+                                <option value="90d">Last 90 days</option>
+                            </select>
+                            <Button variant="outline" size="sm">
+                                <Download className="h-4 w-4 mr-2" />
+                                Export
+                            </Button>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <select
-                            value={timeRange}
-                            onChange={(e) => setTimeRange(e.target.value)}
-                            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        >
-                            <option value="7d">Last 7 days</option>
-                            <option value="30d">Last 30 days</option>
-                            <option value="90d">Last 90 days</option>
-                        </select>
-                        <Button variant="outline" size="sm">
-                            <Download className="h-4 w-4 mr-2" />
-                            Export
-                        </Button>
+
+                    {/* Overview Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <OverviewCard
+                            title="Total Page Views"
+                            value={data.overview.totalViews.toLocaleString()}
+                            change={data.overview.viewsChange}
+                            icon={<Eye className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />}
+                        />
+                        <OverviewCard
+                            title="Unique Visitors"
+                            value={data.overview.uniqueVisitors.toLocaleString()}
+                            change={data.overview.visitorsChange}
+                            icon={<Users className="h-5 w-5 text-purple-600 dark:text-purple-400" />}
+                        />
+                        <OverviewCard
+                            title="Job Applications"
+                            value={data.overview.totalApplications.toLocaleString()}
+                            change={data.overview.applicationsChange}
+                            icon={<FileText className="h-5 w-5 text-green-600 dark:text-green-400" />}
+                        />
+                        <OverviewCard
+                            title="Avg. Time on Page"
+                            value={data.overview.avgTimeOnPage}
+                            change={data.overview.timeChange}
+                            icon={<Clock className="h-5 w-5 text-orange-600 dark:text-orange-400" />}
+                        />
                     </div>
-                </div>
 
-                {/* Overview Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <OverviewCard
-                        title="Total Page Views"
-                        value={data.overview.totalViews.toLocaleString()}
-                        change={data.overview.viewsChange}
-                        icon={<Eye className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />}
-                    />
-                    <OverviewCard
-                        title="Unique Visitors"
-                        value={data.overview.uniqueVisitors.toLocaleString()}
-                        change={data.overview.visitorsChange}
-                        icon={<Users className="h-5 w-5 text-purple-600 dark:text-purple-400" />}
-                    />
-                    <OverviewCard
-                        title="Job Applications"
-                        value={data.overview.totalApplications.toLocaleString()}
-                        change={data.overview.applicationsChange}
-                        icon={<FileText className="h-5 w-5 text-green-600 dark:text-green-400" />}
-                    />
-                    <OverviewCard
-                        title="Avg. Time on Page"
-                        value={data.overview.avgTimeOnPage}
-                        change={data.overview.timeChange}
-                        icon={<Clock className="h-5 w-5 text-orange-600 dark:text-orange-400" />}
-                    />
-                </div>
+                    {/* Main Charts */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                        {/* Traffic Chart - Takes up 2 columns */}
+                        <Card className="lg:col-span-2">
+                            <CardHeader>
+                                <CardTitle className="text-lg font-medium">Traffic Overview</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <ViewsChart data={data.viewsOverTime} />
+                            </CardContent>
+                        </Card>
 
-                {/* Main Charts */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                    {/* Traffic Chart - Takes up 2 columns */}
-                    <Card className="lg:col-span-2">
-                        <CardHeader>
-                            <CardTitle className="text-lg font-medium">Traffic Overview</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <ViewsChart data={data.viewsOverTime} />
-                        </CardContent>
-                    </Card>
+                        {/* Sources Chart */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-lg font-medium">Traffic Sources</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <SourcesChart data={data.trafficSources} />
+                            </CardContent>
+                        </Card>
+                    </div>
 
-                    {/* Sources Chart */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-lg font-medium">Traffic Sources</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <SourcesChart data={data.trafficSources} />
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Secondary Charts & Tables */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Top Jobs Table - Takes up 2 columns */}
-                    <Card className="lg:col-span-2">
-                        <CardHeader>
-                            <CardTitle className="text-lg font-medium">Top Performing Jobs</CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-0">
-                            <div className="overflow-x-auto">
-                                <table className="w-full">
-                                    <thead className="bg-gray-50 dark:bg-gray-800/50">
-                                        <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Job Title</th>
-                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Views</th>
-                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Applications</th>
-                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Conv. Rate</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                        {data.topJobs.map((job: any, i: number) => (
-                                            <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{job.title}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-right">{job.views.toLocaleString()}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-right">{job.applications}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-right">{job.conversion}</td>
+                    {/* Secondary Charts & Tables */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Top Jobs Table - Takes up 2 columns */}
+                        <Card className="lg:col-span-2">
+                            <CardHeader>
+                                <CardTitle className="text-lg font-medium">Top Performing Jobs</CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-0">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead className="bg-gray-50 dark:bg-gray-800/50">
+                                            <tr>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Job Title</th>
+                                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Views</th>
+                                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Applications</th>
+                                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Conv. Rate</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </CardContent>
-                    </Card>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                            {data.topJobs.map((job: any, i: number) => (
+                                                <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{job.title}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-right">{job.views.toLocaleString()}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-right">{job.applications}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-right">{job.conversion}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </CardContent>
+                        </Card>
 
-                    {/* Device Chart */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-lg font-medium">Devices</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <DevicesChart data={data.deviceBreakdown} />
-                        </CardContent>
-                    </Card>
+                        {/* Device Chart */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-lg font-medium">Devices</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <DevicesChart data={data.deviceBreakdown} />
+                            </CardContent>
+                        </Card>
+                    </div>
                 </div>
-            </div>
+            </main>
         </div>
     );
 }
