@@ -10,6 +10,7 @@ export const metadata: Metadata = {
     title: "CareerHub - Build Your Branded Careers Page",
     description: "Create stunning, branded careers pages that help you attract top talent. Customize your company story and showcase open positions.",
     keywords: ["careers page", "job board", "recruitment", "hiring", "ATS"],
+    icons: '/logo.png',
 };
 
 export default function RootLayout({

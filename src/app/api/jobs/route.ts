@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getFilterOptions } from '@/lib/data';
+// import { getFilterOptions } from '@/lib/data';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import type { Job } from '@/types';
 
@@ -75,7 +75,11 @@ export async function GET(request: NextRequest) {
             success: true,
             jobs: paginatedJobs,
             total,
-            filters: getFilterOptions(jobs),
+            filters: {
+                locations: Array.from(new Set(jobs.map(j => j.location))).sort(),
+                departments: Array.from(new Set(jobs.map(j => j.department))).sort(),
+                types: Array.from(new Set(jobs.map(j => j.employment_type))).sort()
+            },
         });
     } catch (error: any) {
         console.error('Error fetching jobs:', error);

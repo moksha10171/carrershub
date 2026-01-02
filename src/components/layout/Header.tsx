@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Globe, Moon, Sun, ChevronDown } from 'lucide-react';
+import { Menu, X, Moon, Sun, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 
@@ -83,17 +83,11 @@ export function Header({ variant = 'solid', showDarkModeToggle = true }: HeaderP
                 <div className="flex items-center justify-between h-16 md:h-18">
                     {/* Logo */}
                     <Link href="/" className="flex items-center gap-2 group">
-                        <div className={cn(
-                            'p-2 rounded-lg transition-colors',
-                            isTransparent
-                                ? 'bg-white/20'
-                                : 'bg-indigo-100 dark:bg-indigo-900/50'
-                        )}>
-                            <Globe className={cn(
-                                'h-5 w-5 sm:h-6 sm:w-6 transition-colors',
-                                isTransparent ? 'text-white' : 'text-indigo-600 dark:text-indigo-400'
-                            )} />
-                        </div>
+                        <img
+                            src="/logo.png"
+                            alt="CareerHub"
+                            className="h-8 w-8 rounded-lg"
+                        />
                         <span className={cn(
                             'text-lg sm:text-xl font-bold transition-colors',
                             isTransparent ? 'text-white' : 'text-gray-900 dark:text-white'

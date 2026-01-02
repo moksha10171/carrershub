@@ -11,7 +11,7 @@ import {
     Upload, FileSpreadsheet, Plus, Trash2, Edit2, Eye, EyeOff,
     CheckCircle, AlertCircle, Download, ChevronLeft, Search, Filter
 } from 'lucide-react';
-import { getAllJobs } from '@/lib/data';
+// import { getAllJobs } from '@/lib/data';
 import { createClient } from '@/lib/supabase/client';
 import type { Job } from '@/types';
 

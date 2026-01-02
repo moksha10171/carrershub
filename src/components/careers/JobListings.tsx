@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Briefcase, Search, LayoutGrid, List } from 'lucide-react';
 import { JobCard, JobCardSkeleton } from './JobCard';
 import { JobFiltersComponent } from './JobFilters';
-import { getFilterOptions } from '@/lib/data';
 import type { Job, JobFilters } from '@/types';
 
 interface JobListingsProps {
@@ -26,7 +25,11 @@ export function JobListings({ jobs, companySlug = 'demo', isLoading = false }: J
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
     // Get unique values for filter options
-    const { locations, departments } = useMemo(() => getFilterOptions(jobs), [jobs]);
+    const { locations, departments } = useMemo(() => {
+        const locs = Array.from(new Set(jobs.map(j => j.location))).sort();
+        const depts = Array.from(new Set(jobs.map(j => j.department))).sort();
+        return { locations: locs, departments: depts };
+    }, [jobs]);
 
     // Filter jobs based on current filters
     const filteredJobs = useMemo(() => {

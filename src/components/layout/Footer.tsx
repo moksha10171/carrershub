@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Globe, Mail, MapPin, Phone, Github, Linkedin, Twitter } from 'lucide-react';
+import { Mail, MapPin, Phone, Github, Linkedin, Twitter } from 'lucide-react';
 
 const footerLinks = {
     product: [
@@ -39,9 +39,7 @@ export function Footer() {
                     {/* Brand Section */}
                     <div className="col-span-2">
                         <Link href="/" className="flex items-center gap-2 mb-4">
-                            <div className="p-2 rounded-lg bg-indigo-600">
-                                <Globe className="h-5 w-5 text-white" />
-                            </div>
+                            <img src="/logo.png" alt="CareerHub" className="h-8 w-8 rounded-lg" />
                             <span className="text-xl font-bold text-white">CareerHub</span>
                         </Link>
                         <p className="text-gray-400 mb-6 max-w-xs leading-relaxed">
@@ -67,7 +65,7 @@ export function Footer() {
                                 <Linkedin className="h-4 w-4" />
                             </a>
                             <a
-                                href="https://github.com"
+                                href="https://github.com/moksha10171/carrershub"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors"

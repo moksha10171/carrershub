@@ -1,69 +1,48 @@
-'use client';
-
-import React from 'react';
-import Link from 'next/link';
-import { Newspaper, Calendar, Tag, ArrowRight, User, Clock } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { Metadata } from 'next';
+import { BlogHero } from '@/components/blog/BlogHero';
+import { BlogList } from '@/components/blog/BlogList';
 import { blogPosts } from '@/lib/blog-data';
+
+export const metadata: Metadata = {
+    title: 'Blog | CareerHub',
+    description: 'Insights, updates, and best practices for modern hiring and recruitment technology.',
+    openGraph: {
+        title: 'CareerHub Blog',
+        description: 'Insights for modern hiring.',
+        type: 'website',
+    },
+};
 
 export default function BlogPage() {
     return (
-        <div className="min-h-screen bg-white dark:bg-gray-950">
-            {/* Hero */}
-            <section className="pt-24 pb-16 bg-gradient-to-b from-purple-50 dark:from-purple-900/20 to-white dark:to-gray-950">
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-100 dark:bg-purple-900/30 mb-6">
-                        <Newspaper className="h-8 w-8 text-purple-600 dark:text-purple-400" />
-                    </div>
-                    <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-4">
-                        Blog
-                    </h1>
-                    <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-                        Insights, updates, and best practices for modern hiring.
-                    </p>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+            <BlogHero />
+
+            <section className="py-20 -mt-10 relative z-20">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                    <BlogList posts={blogPosts} />
                 </div>
             </section>
 
-            {/* Blog Posts */}
-            <section className="py-16">
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="max-w-4xl mx-auto space-y-8">
-                        {blogPosts.map((post) => (
-                            <article
-                                key={post.slug}
-                                className="p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-indigo-500 dark:hover:border-indigo-500 transition-colors"
-                            >
-                                <div className="flex flex-wrap items-center gap-4 mb-3">
-                                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-sm font-medium">
-                                        <Tag className="h-3 w-3" />
-                                        {post.category}
-                                    </span>
-                                    <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400 text-sm">
-                                        <Calendar className="h-4 w-4" />
-                                        {post.date}
-                                    </span>
-                                    <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400 text-sm">
-                                        <Clock className="h-4 w-4" />
-                                        {post.readTime}
-                                    </span>
-                                </div>
-                                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                                    <Link href={`/blog/${post.slug}`} className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
-                                        {post.title}
-                                    </Link>
-                                </h2>
-                                <p className="text-gray-600 dark:text-gray-300 mb-4">
-                                    {post.excerpt}
-                                </p>
-                                <Link href={`/blog/${post.slug}`}>
-                                    <Button variant="ghost" size="sm">
-                                        Read more
-                                        <ArrowRight className="h-4 w-4" />
-                                    </Button>
-                                </Link>
-                            </article>
-                        ))}
-                    </div>
+            {/* Newsletter CTA */}
+            <section className="py-20 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800">
+                <div className="container mx-auto px-4 text-center max-w-2xl">
+                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+                        Stay in the loop
+                    </h2>
+                    <p className="text-gray-600 dark:text-gray-400 mb-8">
+                        Join 10,000+ recruiters getting the latest hiring trends delivered to their inbox.
+                    </p>
+                    <form className="flex flex-col sm:flex-row gap-4">
+                        <input
+                            type="email"
+                            placeholder="Enter your email"
+                            className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                        <button className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors">
+                            Subscribe
+                        </button>
+                    </form>
                 </div>
             </section>
         </div>
