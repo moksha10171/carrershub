@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Moon, Sun, ChevronDown } from 'lucide-react';
+import { Menu, X, Moon, Sun, ChevronDown, Search } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 
@@ -116,6 +116,11 @@ export function Header({ variant = 'solid', showDarkModeToggle = true }: HeaderP
 
                     {/* Actions */}
                     <div className="flex items-center gap-2 sm:gap-3">
+                        {/* Search Button */}
+                        <Link href="/search" className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" aria-label="Search">
+                            <Search className="h-5 w-5" />
+                        </Link>
+
                         {showDarkModeToggle && (
                             <button
                                 onClick={toggleDarkMode}
