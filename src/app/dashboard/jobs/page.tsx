@@ -44,7 +44,65 @@ export default function JobsManagementPage() {
     const [showUploadModal, setShowUploadModal] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
     const [isLoadingSampleData, setIsLoadingSampleData] = useState(false);
+    const [editingJob, setEditingJob] = useState<Job | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Open modal to edit job
+    const handleEditJob = (job: Job) => {
+        setEditingJob(job);
+        setShowAddModal(true);
+    };
+
+    // Save job (create or update)
+    const handleSaveJob = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setIsSaving(true);
+        setUploadError('');
+
+        const formData = new FormData(e.currentTarget);
+        const jobData = {
+            title: formData.get('title') as string,
+            location: formData.get('location') as string,
+            department: formData.get('department') as string,
+            work_policy: formData.get('work_policy') as string,
+            company_id: company.id, // Ensure company_id is included
+        };
+
+        try {
+            const method = editingJob ? 'PUT' : 'POST';
+            const body = editingJob ? { ...jobData, id: editingJob.id } : jobData;
+
+            const response = await fetch('/api/jobs', {
+                method: 'POST', // Using POST for both, dispatch based on action/body if needed, or use PUT if supported
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: editingJob ? 'update_job' : 'create_job',
+                    ...body
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.error || 'Failed to save job');
+            }
+
+            // Refresh jobs
+            const jobsResponse = await fetch(`/api/jobs?company_id=${company.id}`);
+            const jobsData = await jobsResponse.json();
+            setJobs(jobsData.jobs || []);
+
+            setUploadSuccess(true);
+            setTimeout(() => setUploadSuccess(false), 3000);
+            setShowAddModal(false);
+            setEditingJob(null);
+        } catch (error: any) {
+            setUploadError(error.message || 'Failed to save job');
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     // Load sample data from JSON
     const loadSampleData = async () => {
@@ -354,44 +412,50 @@ export default function JobsManagementPage() {
                                     className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-lg w-full p-6 sm:p-8"
                                 >
                                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                                        Post a New Position
+                                        {editingJob ? 'Edit Position' : 'Post a New Position'}
                                     </h2>
-                                    <form onSubmit={(e) => {
-                                        e.preventDefault();
-                                        const formData = new FormData(e.currentTarget);
-                                        const newJob = {
-                                            id: `job-${Date.now()}`,
-                                            title: formData.get('title') as string,
-                                            location: formData.get('location') as string,
-                                            department: formData.get('department') as string,
-                                            work_policy: formData.get('work_policy') as string,
-                                            employment_type: 'Full time',
-                                            experience_level: 'Mid-level',
-                                            is_active: true,
-                                            posted_at: new Date().toISOString(),
-                                        } as Job;
-                                        setJobs([newJob, ...jobs]);
-                                        setShowAddModal(false);
-                                    }} className="space-y-4">
-                                        <Input name="title" label="Job Title" placeholder="e.g. Senior Product Designer" required />
+                                    <form onSubmit={handleSaveJob} className="space-y-4">
+                                        <Input
+                                            name="title"
+                                            label="Job Title"
+                                            placeholder="e.g. Senior Product Designer"
+                                            defaultValue={editingJob?.title}
+                                            required
+                                        />
                                         <div className="grid grid-cols-2 gap-4">
-                                            <Input name="location" label="Location" placeholder="e.g. Remote" required />
-                                            <Input name="department" label="Department" placeholder="e.g. Design" required />
+                                            <Input
+                                                name="location"
+                                                label="Location"
+                                                placeholder="e.g. Remote"
+                                                defaultValue={editingJob?.location}
+                                                required
+                                            />
+                                            <Input
+                                                name="department"
+                                                label="Department"
+                                                placeholder="e.g. Design"
+                                                defaultValue={editingJob?.department}
+                                                required
+                                            />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Work Policy</label>
-                                            <select name="work_policy" className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                                            <select
+                                                name="work_policy"
+                                                className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                                                defaultValue={editingJob?.work_policy || 'Remote'}
+                                            >
                                                 <option value="Remote">Remote</option>
                                                 <option value="Hybrid">Hybrid</option>
                                                 <option value="On-site">On-site</option>
                                             </select>
                                         </div>
                                         <div className="flex gap-3 mt-8">
-                                            <Button variant="outline" className="flex-1" onClick={() => setShowAddModal(false)} type="button">
+                                            <Button variant="outline" className="flex-1" onClick={() => { setShowAddModal(false); setEditingJob(null); }} type="button">
                                                 Cancel
                                             </Button>
-                                            <Button className="flex-1" type="submit">
-                                                Create Job
+                                            <Button className="flex-1" type="submit" isLoading={isSaving}>
+                                                {editingJob ? 'Update Job' : 'Create Job'}
                                             </Button>
                                         </div>
                                     </form>
@@ -492,6 +556,7 @@ export default function JobsManagementPage() {
                                                 <td className="px-4 py-4 text-right">
                                                     <div className="flex items-center justify-end gap-2">
                                                         <button
+                                                            onClick={() => handleEditJob(job)}
                                                             className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
                                                             aria-label="Edit job"
                                                         >
