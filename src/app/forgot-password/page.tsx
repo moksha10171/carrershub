@@ -9,6 +9,7 @@ import { Mail, ArrowRight, AlertCircle, CheckCircle, ChevronLeft } from 'lucide-
 import { createClient } from '@/lib/supabase/client';
 import { Canvas } from '@react-three/fiber';
 import GeometricBackground from '@/components/three/GeometricBackground';
+import { useTheme } from 'next-themes';
 
 export default function ForgotPasswordPage() {
     const [email, setEmail] = useState('');
@@ -16,10 +17,15 @@ export default function ForgotPasswordPage() {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
     const [mounted, setMounted] = useState(false);
+    const { theme, resolvedTheme } = useTheme();
 
     useEffect(() => {
         setMounted(true);
     }, []);
+
+    const isDark = mounted && (theme === 'dark' || resolvedTheme === 'dark');
+    const canvasBgColor = isDark ? '#030712' : '#f9fafb';
+    const particleColor = isDark ? '#818cf8' : '#4f46e5';
 
     const supabase = createClient();
 
@@ -63,11 +69,11 @@ export default function ForgotPasswordPage() {
             {/* 3D Background */}
             <div className="absolute inset-0 z-0">
                 <Canvas camera={{ position: [0, 8, 15], fov: 45 }}>
-                    <color attach="background" args={['#030712']} />
-                    <ambientLight intensity={0.5} />
-                    <pointLight position={[10, 10, 10]} intensity={1} />
+                    <color attach="background" args={[canvasBgColor]} />
+                    <ambientLight intensity={isDark ? 0.5 : 0.8} />
+                    <pointLight position={[10, 10, 10]} intensity={isDark ? 1 : 0.7} />
                     <pointLight position={[-10, 10, -10]} intensity={0.5} color="#4f46e5" />
-                    {mounted && <GeometricBackground color="#4f46e5" isDark={true} />}
+                    {mounted && <GeometricBackground color={particleColor} isDark={isDark} />}
                 </Canvas>
                 {/* Gradients for text readability */}
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-50/90 via-transparent to-gray-50/90 dark:from-gray-950/90 dark:to-gray-950/90 opacity-80" />
