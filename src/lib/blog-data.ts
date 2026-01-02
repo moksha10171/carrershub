@@ -19,7 +19,6 @@ export const blogPosts: BlogPost[] = [
         slug: 'building-better-careers-pages',
         author: 'Sarah Chen',
         readTime: '5 min read',
-        imageUrl: '/images/blog/building-better-careers-pages.png',
         content: `
             <p>Your careers page is often the first impression a candidate has of your company. It's more than just a list of open positions; it's an opportunity to showcase your brand, culture, and values.</p>
             
