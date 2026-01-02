@@ -73,7 +73,8 @@ export default function InteractiveBackground({ className = '' }: InteractiveBac
                         repelRadius={repelRadius}
                         repelStrength={0.12}
                     />
-                    <ambientLight intensity={0.6} />
+                    <ambientLight intensity={0.8} />
+                    <pointLight position={[10, 10, 10]} intensity={0.5} color="#a855f7" />
                 </Suspense>
             </Canvas>
         </div>

@@ -159,21 +159,51 @@ export function CareersPageClient({ company, settings, sections, jobs }: Careers
 
                 {/* Content Sections */}
                 <ErrorBoundary>
-                    {sections
-                        .filter(s => s.is_visible)
-                        .sort((a, b) => a.display_order - b.display_order)
-                        .map((section, index) => (
-                            <ContentSectionComponent key={section.id} section={section} index={index} />
-                        ))}
+                    {sections && sections.length > 0 ? (
+                        sections
+                            .filter(s => s.is_visible)
+                            .sort((a, b) => a.display_order - b.display_order)
+                            .map((section, index) => (
+                                <ContentSectionComponent key={section.id} section={section} index={index} />
+                            ))
+                    ) : (
+                        <div className="py-16 sm:py-20 bg-gray-50 dark:bg-gray-900/50">
+                            <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                                <p className="text-gray-500 dark:text-gray-400">
+                                    Company information will be available soon.
+                                </p>
+                            </div>
+                        </div>
+                    )}
                 </ErrorBoundary>
 
                 {/* Job Listings */}
                 <ErrorBoundary>
-                    <JobListings jobs={jobs} />
+                    {jobs && jobs.length > 0 ? (
+                        <JobListings jobs={jobs} />
+                    ) : (
+                        <div className="py-20 sm:py-24 bg-white dark:bg-gray-900">
+                            <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                                <div className="max-w-md mx-auto">
+                                    <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                        </svg>
+                                    </div>
+                                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                                        No Open Positions
+                                    </h3>
+                                    <p className="text-gray-600 dark:text-gray-400">
+                                        We don't have any open positions at the moment, but check back soon! We're always looking for talented individuals.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </ErrorBoundary>
 
                 {/* Footer */}
-                <footer className="py-10 sm:py-12 bg-gray-100 dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800">
+                <footer className="mt-auto py-12 sm:py-16 bg-gray-100 dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800">
                     <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
                         <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">
                             © {new Date().getFullYear()} {company.name}. All rights reserved.
@@ -183,7 +213,7 @@ export function CareersPageClient({ company, settings, sections, jobs }: Careers
                                 href={company.website}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-block mt-2 text-sm sm:text-base text-primary-600 dark:text-primary-400 hover:underline transition-colors"
+                                className="inline-block mt-3 text-sm sm:text-base text-primary-600 dark:text-primary-400 hover:underline transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded px-2 py-1"
                             >
                                 Visit our website →
                             </a>

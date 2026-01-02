@@ -60,6 +60,18 @@ export async function getCompanyData(slug: string): Promise<CompanyData | null> 
         console.warn('Supabase fetch failed:', error);
     }
 
+    // Fallback to demo data for showcase (demo or techcorp slugs)
+    if (slug === 'demo' || slug === 'techcorp') {
+        const { demoCompany, demoSettings, demoSections, demoJobs } = await import('@/lib/demo-data');
+        return {
+            company: { ...demoCompany, slug }, // Use the requested slug
+            settings: demoSettings,
+            sections: demoSections,
+            jobs: demoJobs,
+            fromDatabase: false,
+        };
+    }
+
     return null;
 }
 
