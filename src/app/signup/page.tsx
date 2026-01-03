@@ -33,11 +33,9 @@ export default function SignupPage() {
     const isDark = mounted && (theme === 'dark' || resolvedTheme === 'dark');
     const canvasBgColor = isDark ? '#030712' : '#f9fafb';
 
-    // OTP state
-    const [otp, setOtp] = useState(['', '', '', '', '', '']);
+    // Resend email state
     const [isResending, setIsResending] = useState(false);
     const [resendCooldown, setResendCooldown] = useState(0);
-    const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
     const router = useRouter();
     const supabase = createClient();
@@ -75,15 +73,19 @@ export default function SignupPage() {
         setIsLoading(true);
 
         try {
-            // Sign up with email OTP
-            const { error: signUpError } = await supabase.auth.signUp({
+            // Get the base URL - use production domain or fallback to current origin
+            const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://carrershub.vercel.app';
+            const redirectUrl = `${baseUrl}/auth/verify`;
+
+            // Sign up with email confirmation
+            const { data, error: signUpError } = await supabase.auth.signUp({
                 email,
                 password,
                 options: {
                     data: {
                         full_name: name,
                     },
-                    emailRedirectTo: undefined, // Don't send magic link
+                    emailRedirectTo: redirectUrl,
                 },
             });
 
@@ -93,22 +95,19 @@ export default function SignupPage() {
                 return;
             }
 
-            // Send OTP for verification
-            const { error: otpError } = await supabase.auth.signInWithOtp({
-                email,
-                options: {
-                    shouldCreateUser: false, // User already created
-                },
-            });
-
-            if (otpError) {
-                // If OTP fails, still move to verify step (user was created)
-                console.warn('OTP send failed, user may still verify via email link:', otpError);
+            // Check if email confirmation is required
+            if (data?.user && !data.user.confirmed_at) {
+                // Email sent successfully - show success message
+                setStep('verify');
+                setIsLoading(false);
+            } else if (data?.user?.confirmed_at) {
+                // Auto-confirmed (unlikely in production)
+                setStep('success');
+                setTimeout(() => {
+                    router.push('/dashboard');
+                }, 2000);
             }
 
-            setStep('verify');
-            startResendCooldown();
-            setIsLoading(false);
         } catch (err) {
             setError('An unexpected error occurred. Please try again.');
             setIsLoading(false);
@@ -128,96 +127,32 @@ export default function SignupPage() {
         }, 1000);
     };
 
-    const handleResendOtp = async () => {
+    const handleResendEmail = async () => {
         setIsResending(true);
         setError('');
 
         try {
-            const { error: otpError } = await supabase.auth.signInWithOtp({
-                email,
+            const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://carrershub.vercel.app';
+            const redirectUrl = `${baseUrl}/auth/verify`;
+
+            // Resend confirmation email
+            const { error: resendError } = await supabase.auth.resend({
+                type: 'signup',
+                email: email,
                 options: {
-                    shouldCreateUser: false,
+                    emailRedirectTo: redirectUrl,
                 },
             });
 
-            if (otpError) {
-                setError('Failed to resend code. Please try again.');
+            if (resendError) {
+                setError('Failed to resend email. Please try again.');
             } else {
                 startResendCooldown();
             }
         } catch (err) {
-            setError('Failed to resend code.');
+            setError('Failed to resend email.');
         } finally {
             setIsResending(false);
-        }
-    };
-
-    const handleOtpChange = (index: number, value: string) => {
-        if (!/^\d*$/.test(value)) return; // Only allow digits
-
-        const newOtp = [...otp];
-        newOtp[index] = value.slice(-1); // Only keep last digit
-        setOtp(newOtp);
-
-        // Auto-focus next input
-        if (value && index < 5) {
-            otpRefs.current[index + 1]?.focus();
-        }
-    };
-
-    const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
-        if (e.key === 'Backspace' && !otp[index] && index > 0) {
-            otpRefs.current[index - 1]?.focus();
-        }
-    };
-
-    const handleOtpPaste = (e: React.ClipboardEvent) => {
-        e.preventDefault();
-        const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-        const newOtp = [...otp];
-        for (let i = 0; i < pastedData.length; i++) {
-            newOtp[i] = pastedData[i];
-        }
-        setOtp(newOtp);
-        if (pastedData.length === 6) {
-            otpRefs.current[5]?.focus();
-        }
-    };
-
-    const handleVerifyOtp = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
-
-        const otpCode = otp.join('');
-        if (otpCode.length !== 6) {
-            setError('Please enter the 6-digit code.');
-            return;
-        }
-
-        setIsLoading(true);
-
-        try {
-            const { error: verifyError } = await supabase.auth.verifyOtp({
-                email,
-                token: otpCode,
-                type: 'email',
-            });
-
-            if (verifyError) {
-                setError('Invalid or expired code. Please try again.');
-                setIsLoading(false);
-                return;
-            }
-
-            setStep('success');
-
-            // Redirect to dashboard after success animation
-            setTimeout(() => {
-                router.push('/dashboard');
-            }, 2000);
-        } catch (err) {
-            setError('Verification failed. Please try again.');
-            setIsLoading(false);
         }
     };
 
@@ -259,16 +194,16 @@ export default function SignupPage() {
                             </motion.div>
                         ) : step === 'verify' ? (
                             <>
-                                {/* OTP Verification Step */}
+                                {/* Email Link Verification Step */}
                                 <div className="text-center mb-8">
                                     <div className="w-16 h-16 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center mx-auto mb-4">
                                         <Mail className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
                                     </div>
                                     <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                                        Verify Your Email
+                                        Check Your Email
                                     </h1>
                                     <p className="text-gray-600 dark:text-gray-400">
-                                        We sent a 6-digit code to<br />
+                                        We sent a verification link to<br />
                                         <span className="font-medium text-gray-900 dark:text-white">{email}</span>
                                     </p>
                                 </div>
@@ -285,39 +220,31 @@ export default function SignupPage() {
                                     </motion.div>
                                 )}
 
-                                {/* OTP Input */}
-                                <form onSubmit={handleVerifyOtp} className="space-y-6">
-                                    <div className="flex justify-center gap-1 sm:gap-2" onPaste={handleOtpPaste}>
-                                        {otp.map((digit, index) => (
-                                            <input
-                                                key={index}
-                                                ref={(el) => { otpRefs.current[index] = el; }}
-                                                type="text"
-                                                inputMode="numeric"
-                                                maxLength={1}
-                                                value={digit}
-                                                onChange={(e) => handleOtpChange(index, e.target.value)}
-                                                onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                                                className="w-10 h-12 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-bold rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
-                                            />
-                                        ))}
-                                    </div>
+                                {/* Instructions */}
+                                <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-6 mb-6">
+                                    <h3 className="font-semibold text-gray-900 dark:text-white mb-3">
+                                        Next Steps:
+                                    </h3>
+                                    <ol className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                                        <li className="flex items-start gap-2">
+                                            <span className="flex-shrink-0 w-5 h-5 rounded-full bg-indigo-200 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300 flex items-center justify-center text-xs font-semibold">1</span>
+                                            <span>Open your email inbox</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="flex-shrink-0 w-5 h-5 rounded-full bg-indigo-200 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300 flex items-center justify-center text-xs font-semibold">2</span>
+                                            <span>Click the verification link in the email</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="flex-shrink-0 w-5 h-5 rounded-full bg-indigo-200 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300 flex items-center justify-center text-xs font-semibold">3</span>
+                                            <span>You'll be redirected to complete your setup</span>
+                                        </li>
+                                    </ol>
+                                </div>
 
-                                    <Button
-                                        type="submit"
-                                        className="w-full"
-                                        size="lg"
-                                        isLoading={isLoading}
-                                    >
-                                        Verify Email
-                                        <ArrowRight className="h-5 w-5 ml-2" />
-                                    </Button>
-                                </form>
-
-                                {/* Resend Code */}
-                                <div className="mt-6 text-center">
+                                {/* Resend Email */}
+                                <div className="text-center space-y-4">
                                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                                        Didn't receive the code?{' '}
+                                        Didn't receive the email?{' '}
                                         {resendCooldown > 0 ? (
                                             <span className="text-gray-500">
                                                 Resend in {resendCooldown}s
@@ -325,7 +252,7 @@ export default function SignupPage() {
                                         ) : (
                                             <button
                                                 type="button"
-                                                onClick={handleResendOtp}
+                                                onClick={handleResendEmail}
                                                 disabled={isResending}
                                                 className="text-indigo-600 dark:text-indigo-400 font-medium hover:underline inline-flex items-center gap-1"
                                             >
@@ -335,10 +262,14 @@ export default function SignupPage() {
                                                         Sending...
                                                     </>
                                                 ) : (
-                                                    'Resend Code'
+                                                    'Resend Email'
                                                 )}
                                             </button>
                                         )}
+                                    </p>
+
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        Check your spam folder if you don't see it in your inbox
                                     </p>
                                 </div>
 
@@ -346,7 +277,7 @@ export default function SignupPage() {
                                 <button
                                     type="button"
                                     onClick={() => { setStep('signup'); setError(''); }}
-                                    className="mt-4 w-full text-center text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                                    className="mt-6 w-full text-center text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                                 >
                                     ← Use a different email
                                 </button>
