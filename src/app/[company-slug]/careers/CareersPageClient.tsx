@@ -50,7 +50,6 @@ class ErrorBoundary extends React.Component<
 }
 
 export function CareersPageClient({ company, settings, sections, jobs }: CareersPageClientProps) {
-    const [isDark, setIsDark] = React.useState(false);
     const [showScrollTop, setShowScrollTop] = React.useState(false);
     const [isLoaded, setIsLoaded] = React.useState(false);
 
