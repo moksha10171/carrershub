@@ -55,45 +55,62 @@ export async function POST(request: NextRequest) {
         }
 
         // Check for conflicts (has published version changed since draft was created?)
-        const { data: currentPublished } = await supabase
-            .from('companies')
-            .select('version')
-            .eq('id', company.id)
-            .single();
+        // This is optional - if version columns don't exist, skip conflict check
+        let currentPublished = null;
+        let existingDraft = null;
 
-        const { data: existingDraft } = await supabase
-            .from('draft_companies')
-            .select('base_version, version')
-            .eq('company_id', company.id)
-            .single();
+        try {
+            const { data: publishedData } = await supabase
+                .from('companies')
+                .select('version')
+                .eq('id', company.id)
+                .single();
+            currentPublished = publishedData;
 
-        // If draft exists and published version has changed, return conflict
-        if (existingDraft && currentPublished) {
-            const publishedVersion = currentPublished.version || 1;
-            const draftBaseVersion = existingDraft.base_version || 1;
+            const { data: draftData } = await supabase
+                .from('draft_companies')
+                .select('base_version, version')
+                .eq('company_id', company.id)
+                .single();
+            existingDraft = draftData;
 
-            if (publishedVersion > draftBaseVersion) {
-                return NextResponse.json({
-                    success: false,
-                    conflict: true,
-                    error: 'Content was published by another user. Please review changes before continuing.',
-                    publishedVersion,
-                    draftBaseVersion
-                }, { status: 409 }); // 409 Conflict
+            // If draft exists and published version has changed, return conflict
+            if (existingDraft && currentPublished) {
+                const publishedVersion = currentPublished.version || 1;
+                const draftBaseVersion = existingDraft.base_version || 1;
+
+                if (publishedVersion > draftBaseVersion) {
+                    return NextResponse.json({
+                        success: false,
+                        conflict: true,
+                        error: 'Content was published by another user. Please review changes before continuing.',
+                        publishedVersion,
+                        draftBaseVersion
+                    }, { status: 409 }); // 409 Conflict
+                }
             }
+        } catch (versionError) {
+            // Version columns might not exist - that's okay, skip conflict check
+            console.log('Version tracking not available (columns may not exist):', versionError);
         }
 
         // Create or update draft entry
-        const draftData = {
+        const draftData: any = {
             company_id: company.id,
             user_id: user.id,
             company_data: company,
             settings_data: settings,
             sections_data: sections,
-            updated_at: new Date().toISOString(),
-            base_version: currentPublished?.version || 1,
-            version: (existingDraft?.version || 0) + 1
+            updated_at: new Date().toISOString()
         };
+
+        // Only add version fields if they're supported
+        if (currentPublished?.version !== undefined) {
+            draftData.base_version = currentPublished.version || 1;
+        }
+        if (existingDraft?.version !== undefined) {
+            draftData.version = (existingDraft.version || 0) + 1;
+        }
 
         // Upsert to draft_companies table
         const { error: draftError } = await supabase
