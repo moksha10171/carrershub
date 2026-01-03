@@ -107,6 +107,71 @@ export async function POST(request: NextRequest) {
         const { action, jobId, is_active, jobs: importJobs } = body;
         const supabase = await createServerSupabaseClient();
 
+        if (action === 'create_job' || action === 'update_job') {
+            const { title, location, department, work_policy, company_id, id: jobId } = body;
+
+            if (!company_id || !title || !location || !department) {
+                return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
+            }
+
+            // Verify company ownership
+            const { data: company } = await supabase
+                .from('companies')
+                .select('id, user_id')
+                .eq('id', company_id)
+                .single();
+
+            if (!company || company.user_id !== user.id) {
+                return NextResponse.json({ success: false, error: 'Not authorized or company not found' }, { status: 403 });
+            }
+
+            if (action === 'create_job') {
+                const slug = title.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '') + '-' + Math.random().toString(36).substring(2, 7);
+
+                const { data, error } = await supabase
+                    .from('jobs')
+                    .insert({
+                        company_id,
+                        title,
+                        location,
+                        department,
+                        work_policy,
+                        slug,
+                        description: `<p>Join our team as a ${title} in ${location}.</p>`,
+                        employment_type: body.employment_type || 'Full time',
+                        experience_level: body.experience_level || 'Mid-level',
+                        job_type: body.job_type || 'Permanent',
+                        is_active: true,
+                        posted_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    })
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                return NextResponse.json({ success: true, job: data });
+            } else {
+                // update_job
+                // Verify job ownership (redundant but safe since we checked company ownership above)
+                const { error } = await supabase
+                    .from('jobs')
+                    .update({
+                        title,
+                        location,
+                        department,
+                        work_policy,
+                        employment_type: body.employment_type,
+                        experience_level: body.experience_level,
+                        job_type: body.job_type,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', jobId)
+                    .eq('company_id', company_id);
+
+                if (error) throw error;
+                return NextResponse.json({ success: true });
+            }
+        }
         if (action === 'update_status' || action === 'delete') {
             // Verify ownership
             const { data: job } = await supabase
@@ -133,7 +198,7 @@ export async function POST(request: NextRequest) {
                 if (error) throw error;
             }
         }
-        // Import jobs
+
         if (action === 'import') {
             const { company_id, jobs: importJobs } = body;
 

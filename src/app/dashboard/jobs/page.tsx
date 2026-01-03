@@ -66,7 +66,10 @@ export default function JobsManagementPage() {
             location: formData.get('location') as string,
             department: formData.get('department') as string,
             work_policy: formData.get('work_policy') as string,
-            company_id: company.id, // Ensure company_id is included
+            employment_type: formData.get('employment_type') as string,
+            experience_level: formData.get('experience_level') as string,
+            job_type: formData.get('job_type') as string,
+            company_id: company.id,
         };
 
         try {
@@ -437,6 +440,44 @@ export default function JobsManagementPage() {
                                                 defaultValue={editingJob?.department}
                                                 required
                                             />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Employment Type</label>
+                                                <select
+                                                    name="employment_type"
+                                                    className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                                                    defaultValue={editingJob?.employment_type || 'Full time'}
+                                                >
+                                                    <option value="Full time">Full time</option>
+                                                    <option value="Part time">Part time</option>
+                                                    <option value="Contract">Contract</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Experience Level</label>
+                                                <select
+                                                    name="experience_level"
+                                                    className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                                                    defaultValue={editingJob?.experience_level || 'Mid-level'}
+                                                >
+                                                    <option value="Junior">Junior</option>
+                                                    <option value="Mid-level">Mid-level</option>
+                                                    <option value="Senior">Senior</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Job Type</label>
+                                            <select
+                                                name="job_type"
+                                                className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                                                defaultValue={editingJob?.job_type || 'Permanent'}
+                                            >
+                                                <option value="Permanent">Permanent</option>
+                                                <option value="Temporary">Temporary</option>
+                                                <option value="Internship">Internship</option>
+                                            </select>
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Work Policy</label>
