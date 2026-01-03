@@ -11,6 +11,7 @@ import { JobActions } from './JobActions';
 import { StickyApply } from './StickyApply';
 import { ApplyButton } from './ApplyButton';
 import { ThemeSetup } from '@/components/company/ThemeSetup';
+import { AnalyticsTracker } from '@/components/company/AnalyticsTracker';
 
 interface JobPageProps {
     params: Promise<{ 'company-slug': string; 'job-slug': string }>;
@@ -104,7 +105,17 @@ export default async function JobPage({ params }: JobPageProps) {
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(jobSchema) }}
             />
             <ThemeSetup settings={settings} />
-            <StickyApply title={job.title} companyName={company.name} />
+            <AnalyticsTracker
+                companyId={company.id}
+                jobId={job.id}
+                pageType="job_detail"
+            />
+            <StickyApply
+                jobId={job.id}
+                companyId={company.id}
+                title={job.title}
+                companyName={company.name}
+            />
             <main className="pt-20 lg:pt-24 pb-16">
                 {/* Breadcrumb */}
                 <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
@@ -180,6 +191,8 @@ export default async function JobPage({ params }: JobPageProps) {
                                 {/* Apply Button - Mobile */}
                                 <div className="lg:hidden">
                                     <ApplyButton
+                                        jobId={job.id}
+                                        companyId={company.id}
                                         jobTitle={job.title}
                                         companyName={company.name}
                                         description="Apply for this position"
@@ -208,6 +221,8 @@ export default async function JobPage({ params }: JobPageProps) {
                                     Interested in this role?
                                 </h3>
                                 <ApplyButton
+                                    jobId={job.id}
+                                    companyId={company.id}
                                     jobTitle={job.title}
                                     companyName={company.name}
                                     description="Apply Now"

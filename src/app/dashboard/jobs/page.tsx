@@ -290,6 +290,7 @@ export default function JobsManagementPage() {
         // API call for import
         await fetch('/api/jobs', {
             method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: 'import',
                 company_id: company.id,
@@ -317,6 +318,7 @@ export default function JobsManagementPage() {
         try {
             await fetch('/api/jobs', {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'update_status', jobId, is_active: !job.is_active }),
             });
         } catch (error) {
@@ -334,6 +336,7 @@ export default function JobsManagementPage() {
             try {
                 await fetch('/api/jobs', {
                     method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'delete', jobId }),
                 });
             } catch (error) {

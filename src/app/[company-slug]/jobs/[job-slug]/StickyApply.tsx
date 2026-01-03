@@ -6,7 +6,17 @@ import { ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ApplyButton } from './ApplyButton';
 
-export function StickyApply({ title, companyName }: { title: string; companyName: string }) {
+export function StickyApply({
+    jobId,
+    companyId,
+    title,
+    companyName
+}: {
+    jobId: string;
+    companyId: string;
+    title: string;
+    companyName: string
+}) {
     const [isVisible, setIsVisible] = useState(false);
 
     useEffect(() => {
@@ -38,6 +48,8 @@ export function StickyApply({ title, companyName }: { title: string; companyName
                             <p className="text-sm text-gray-500 truncate">{companyName}</p>
                         </div>
                         <ApplyButton
+                            jobId={jobId}
+                            companyId={companyId}
                             jobTitle={title}
                             companyName={companyName}
                             description="Apply Now"

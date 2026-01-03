@@ -6,6 +6,7 @@ import type { Company, CompanySettings, ContentSection, Job } from '@/types';
 import { ArrowUp, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeSetup } from '@/components/company/ThemeSetup';
+import { AnalyticsTracker } from '@/components/company/AnalyticsTracker';
 
 interface CareersPageClientProps {
     company: Company;
@@ -83,6 +84,7 @@ export function CareersPageClient({ company, settings, sections, jobs }: Careers
     return (
         <ErrorBoundary>
             <ThemeSetup settings={settings} />
+            <AnalyticsTracker companyId={company.id} pageType="careers" />
 
             <div className="min-h-screen pt-20 lg:pt-24 bg-white dark:bg-gray-900 transition-colors duration-300">
                 {/* Theme Toggle is now handled by ThemeSetup */}
