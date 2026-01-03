@@ -56,6 +56,16 @@ export async function middleware(request: NextRequest) {
 
     await supabase.auth.getUser()
 
+    // Set cache control headers for preview and edit routes
+    if (
+        request.nextUrl.pathname.includes('/preview') ||
+        request.nextUrl.pathname.includes('/edit')
+    ) {
+        response.headers.set('Cache-Control', 'no-store, must-revalidate');
+        response.headers.set('CDN-Cache-Control', 'no-store');
+        response.headers.set('Pragma', 'no-cache');
+    }
+
     return response
 }
 

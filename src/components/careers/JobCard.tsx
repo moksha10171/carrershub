@@ -43,18 +43,18 @@ export function JobCard({ job, index = 0, companySlug = 'demo', onClick }: JobCa
                     className={cn(
                         "group relative h-full bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700",
                         "p-5 sm:p-6 shadow-sm transition-all duration-300",
-                        "hover:shadow-xl hover:border-indigo-500 dark:hover:border-indigo-500",
+                        "hover:shadow-xl hover:border-primary-500/50 dark:hover:border-primary-500/50",
                         "cursor-pointer"
                     )}
                 >
                     {/* Hover gradient overlay */}
-                    <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-indigo-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
                     <div className="relative z-10 flex flex-col h-full">
                         {/* Header */}
                         <div className="flex items-start justify-between gap-3 mb-4">
                             <div className="flex-1 min-w-0">
-                                <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-2 leading-snug">
+                                <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors line-clamp-2 leading-snug">
                                     {job.title}
                                 </h3>
                                 <div className="flex items-center gap-2 mt-2">
@@ -102,7 +102,7 @@ export function JobCard({ job, index = 0, companySlug = 'demo', onClick }: JobCa
                                     <Clock className="h-3 w-3" />
                                     <span>{formatPostedDate(job.posted_at)}</span>
                                 </div>
-                                <ArrowRight className="h-4 w-4 text-gray-300 dark:text-gray-600 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" />
+                                <ArrowRight className="h-4 w-4 text-gray-300 dark:text-gray-600 group-hover:text-primary-500 group-hover:translate-x-1 transition-all" />
                             </div>
                         </div>
                     </div>

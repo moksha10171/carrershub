@@ -10,7 +10,8 @@ import {
 } from 'lucide-react';
 
 import { HeroSection, JobListings, ContentSectionComponent } from '@/components/careers';
-// import { getAllJobs, demoCompany, demoSettings, demoSections } from '@/lib/data';
+import { PreviewBanner } from '@/components/preview/PreviewBanner';
+import { createClient } from '@/lib/supabase/client';
 
 type DeviceMode = 'desktop' | 'tablet' | 'mobile';
 type Orientation = 'portrait' | 'landscape';
@@ -19,6 +20,7 @@ export default function PreviewPage() {
     const params = useParams();
     const rawSlug = params['company-slug'] as string;
     const companySlug = (rawSlug && rawSlug !== 'undefined' && rawSlug !== 'null') ? rawSlug : null;
+    const supabase = createClient();
 
     const [deviceMode, setDeviceMode] = useState<DeviceMode>('desktop');
     const [isFullscreen, setIsFullscreen] = useState(false);
@@ -26,28 +28,48 @@ export default function PreviewPage() {
     const [isLoading, setIsLoading] = useState(true);
 
     // Company data state
-    // Company data state
     const [company, setCompany] = useState<any>(null);
     const [settings, setSettings] = useState<any>(null);
     const [sections, setSections] = useState<any[]>([]);
     const [jobs, setJobs] = useState<any[]>([]);
 
-    // Fetch company data
+    // Fetch draft data for preview
     useEffect(() => {
         const fetchData = async () => {
             try {
                 if (!companySlug) return;
 
-                // Fall back to API
-                const response = await fetch(`/api/companies?slug=${companySlug}`);
-                const result = await response.json();
-                if (result.success && result.data) {
-                    setCompany(result.data.company);
-                    setSettings(result.data.settings || {});
-                    setSections(result.data.sections || []);
-                    if (result.data.jobs) {
-                        setJobs(result.data.jobs);
-                    }
+                // First, get company ID from slug (using live API)
+                const companyResponse = await fetch(`/api/companies?slug=${companySlug}`);
+                const companyResult = await companyResponse.json();
+
+                if (!companyResult.success || !companyResult.data) {
+                    setIsLoading(false);
+                    return;
+                }
+
+                const liveCompany = companyResult.data.company;
+
+                // Try to fetch draft data
+                const draftResponse = await fetch(`/api/companies/save?company_id=${liveCompany.id}`);
+                const draftResult = await draftResponse.json();
+
+                // Use draft data if available, otherwise fall back to live
+                if (draftResult.success && draftResult.draft) {
+                    const draft = draftResult.draft;
+                    setCompany(draft.company_data || liveCompany);
+                    setSettings(draft.settings_data || companyResult.data.settings || {});
+                    setSections(draft.sections_data || companyResult.data.sections || []);
+                } else {
+                    // No draft, use live data
+                    setCompany(liveCompany);
+                    setSettings(companyResult.data.settings || {});
+                    setSections(companyResult.data.sections || []);
+                }
+
+                // Jobs always from live for now
+                if (companyResult.data.jobs) {
+                    setJobs(companyResult.data.jobs);
                 }
             } catch (error) {
                 console.error('Failed to fetch preview data:', error);
@@ -113,6 +135,9 @@ export default function PreviewPage() {
 
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 overflow-x-hidden">
+            {/* Preview Banner */}
+            <PreviewBanner companySlug={companySlug || ''} />
+
             {/* Preview Toolbar */}
             {!isFullscreen && (
                 <motion.div

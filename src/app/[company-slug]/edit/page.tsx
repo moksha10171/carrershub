@@ -9,10 +9,13 @@ import { Input } from '@/components/ui/Input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import {
     Palette, Image, Type, Video, GripVertical, Plus, Trash2, Eye,
-    Save, ChevronLeft, Check, AlertCircle, Upload, LinkIcon, CheckCircle
+    Save, ChevronLeft, Check, AlertCircle, Upload, LinkIcon, CheckCircle, Clock
 } from 'lucide-react';
-// import { demoCompany, demoSettings, demoSections } from '@/lib/data';
 import { createClient } from '@/lib/supabase/client';
+import { PublishConfirmModal } from '@/components/edit/PublishConfirmModal';
+import { formatTimestamp } from '@/lib/utils/formatTimestamp';
+import { useAutoSave } from '@/hooks/useAutoSave';
+import { useHeartbeat } from '@/hooks/useHeartbeat';
 
 interface ContentSectionEdit {
     id: string;
@@ -70,9 +73,35 @@ export default function EditPage() {
 
     const [activeTab, setActiveTab] = useState<'branding' | 'content' | 'seo'>('branding');
     const [isSaving, setIsSaving] = useState(false);
+    const [isPublishing, setIsPublishing] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
+    const [publishSuccess, setPublishSuccess] = useState(false);
     const [saveError, setSaveError] = useState('');
+    const [companyId, setCompanyId] = useState<string | null>(null);
     const [hasChanges, setHasChanges] = useState(false);
+    const [showPublishModal, setShowPublishModal] = useState(false);
+    const [lastPublishedAt, setLastPublishedAt] = useState<string | null>(null);
+    const [draftUpdatedAt, setDraftUpdatedAt] = useState<string | null>(null);
+    const [conflictDetected, setConflictDetected] = useState(false);
+    const [conflictData, setConflictData] = useState<any>(null);
+
+    // Auto-save hook (saves every 30 seconds if there are changes)
+    const { lastSaved: autoSaveTime, isSaving: isAutoSaving } = useAutoSave(
+        hasChanges,
+        async () => {
+            if (companyId) {
+                await handleSave();
+            }
+        },
+        { interval: 30000, enabled: !!companyId }
+    );
+
+    // Heartbeat hook (tracks concurrent editors)
+    const { activeEditors } = useHeartbeat({
+        companyId,
+        interval: 30000,
+        enabled: !!companyId
+    });
 
     // Keyboard shortcuts (Ctrl+S to save)
     // Use ref to prevent stale closure issues
@@ -93,6 +122,19 @@ export default function EditPage() {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
+
+    // Navigation guard - warn before leaving with unsaved changes
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (hasChanges) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [hasChanges]);
 
     // Fetch data on mount
     useEffect(() => {
@@ -119,20 +161,66 @@ export default function EditPage() {
                         return;
                     }
 
+                    // Store company ID for later use
+                    setCompanyId(company.id);
+
+                    // Check if draft exists
+                    const draftResponse = await fetch(`/api/companies/save?company_id=${company.id}`);
+                    const draftData = await draftResponse.json();
+
+                    // If no draft exists, create initial draft from published data
+                    if (!draftData.draft) {
+                        console.log('No draft found, creating initial draft from published data');
+                        try {
+                            await fetch('/api/companies/save', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    company,
+                                    settings,
+                                    sections: apiSections
+                                })
+                            });
+                            // Fetch the newly created draft
+                            const newDraftResponse = await fetch(`/api/companies/save?company_id=${company.id}`);
+                            const newDraftData = await newDraftResponse.json();
+                            if (newDraftData.success && newDraftData.draft) {
+                                draftData.draft = newDraftData.draft;
+                            }
+                        } catch (error) {
+                            console.error('Failed to create initial draft:', error);
+                        }
+                    }
+
+                    // Use draft data if available, otherwise use live data
+                    const dataToUse = draftData.success && draftData.draft
+                        ? draftData.draft
+                        : { company_data: company, settings_data: settings, sections_data: apiSections };
+
+                    const companyToUse = dataToUse.company_data || company;
+                    const settingsToUse = dataToUse.settings_data || settings;
+                    const sectionsToUse = dataToUse.sections_data || apiSections;
+
+                    // Store timestamps if draft exists
+                    if (draftData.success && draftData.draft) {
+                        setDraftUpdatedAt(draftData.draft.updated_at);
+                        setLastPublishedAt(draftData.draft.last_published_at);
+                    }
+
                     setBrandSettings({
-                        companyName: company.name,
-                        tagline: company.tagline || '',
-                        website: company.website || '',
-                        primaryColor: settings?.primary_color || '#6366F1',
-                        secondaryColor: settings?.secondary_color || '#4F46E5',
-                        accentColor: settings?.accent_color || '#10B981',
-                        logoUrl: company.logo_url || '',
-                        bannerUrl: company.banner_url || '',
-                        cultureVideoUrl: settings?.culture_video_url || '',
+                        companyName: companyToUse.name,
+                        tagline: companyToUse.tagline || '',
+                        website: companyToUse.website || '',
+                        primaryColor: settingsToUse?.primary_color || '#6366F1',
+                        secondaryColor: settingsToUse?.secondary_color || '#4F46E5',
+                        accentColor: settingsToUse?.accent_color || '#10B981',
+                        logoUrl: companyToUse.logo_url || '',
+                        bannerUrl: companyToUse.banner_url || '',
+                        cultureVideoUrl: settingsToUse?.culture_video_url || '',
                     });
 
-                    if (apiSections && Array.isArray(apiSections)) {
-                        setSections(apiSections.map((s: any) => ({
+                    if (sectionsToUse && Array.isArray(sectionsToUse)) {
+                        setSections(sectionsToUse.map((s: any) => ({
                             id: s.id,
                             title: s.title,
                             type: s.type,
@@ -221,43 +309,53 @@ export default function EditPage() {
     };
 
     const handleSave = async () => {
+        if (!companyId) {
+            setSaveError('Company ID not found');
+            return;
+        }
+
         setIsSaving(true);
         try {
-            // Save to LocalStorage for demo mode
             const companyData = {
-                company: {
-                    name: brandSettings.companyName,
-                    tagline: brandSettings.tagline,
-                    website: brandSettings.website,
-                    logo_url: brandSettings.logoUrl,
-                    banner_url: brandSettings.bannerUrl,
-                },
-                settings: {
-                    primary_color: brandSettings.primaryColor,
-                    secondary_color: brandSettings.secondaryColor,
-                    accent_color: brandSettings.accentColor,
-                    culture_video_url: brandSettings.cultureVideoUrl,
-                },
-                sections: sections.map((s, idx) => ({
-                    ...s,
-                    display_order: idx + 1,
-                })),
+                id: companyId,
+                name: brandSettings.companyName,
+                tagline: brandSettings.tagline,
+                website: brandSettings.website,
+                logo_url: brandSettings.logoUrl,
+                banner_url: brandSettings.bannerUrl,
             };
 
-            // Save to Backend
-            const response = await fetch('/api/companies', {
+            const settingsData = {
+                primary_color: brandSettings.primaryColor,
+                secondary_color: brandSettings.secondaryColor,
+                accent_color: brandSettings.accentColor,
+                culture_video_url: brandSettings.cultureVideoUrl,
+            };
+
+            const sectionsData = sections.map((s, idx) => ({
+                ...s,
+                display_order: idx,
+            }));
+
+            // Save to draft
+            const response = await fetch('/api/companies/save', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    action: 'update_company',
-                    slug: companySlug,
-                    ...companyData,
+                    company: companyData,
+                    settings: settingsData,
+                    sections: sectionsData,
                 }),
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to sync with server');
+                throw new Error(errorData.error || 'Failed to save draft');
+            }
+
+            const result = await response.json();
+            if (result.updatedAt) {
+                setDraftUpdatedAt(result.updatedAt);
             }
 
             setSaveSuccess(true);
@@ -265,17 +363,59 @@ export default function EditPage() {
             setHasChanges(false);
             setTimeout(() => setSaveSuccess(false), 3000);
         } catch (error: any) {
-            console.error('Failed to save changes:', error);
-            // In a real app we'd use a toast system here
-            // For now, setting a temporary error state would be better than alert, 
-            // but for simple feedback let's stick to a clear console error or simple UI feedback if we had a slot.
-            // Let's add an error UI near the save button in the future.
-            console.error('Save failed:', error);
-            setSaveError(`Error: ${error.message || 'Failed to save changes'}`);
+            console.error('Failed to save draft:', error);
+            setSaveError(`Error: ${error.message || 'Failed to save draft'} `);
             setSaveSuccess(false);
             setTimeout(() => setSaveError(''), 5000);
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const handlePublish = async () => {
+        if (!companyId) {
+            setSaveError('Company ID not found');
+            return;
+        }
+
+        // Close modal
+        setShowPublishModal(false);
+
+        // Auto-save if there are unsaved changes
+        if (hasChanges) {
+            await handleSave();
+        }
+
+        setIsPublishing(true);
+        try {
+            const response = await fetch('/api/companies/publish', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    company_id: companyId,
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to publish changes');
+            }
+
+            const result = await response.json();
+            if (result.publishedAt) {
+                setLastPublishedAt(result.publishedAt);
+            }
+
+            setPublishSuccess(true);
+            setSaveError('');
+            setTimeout(() => setPublishSuccess(false), 3000);
+        } catch (error: any) {
+            console.error('Failed to publish:', error);
+            setSaveError(`Error: ${error.message || 'Failed to publish'}`);
+            setPublishSuccess(false);
+            setTimeout(() => setSaveError(''), 5000);
+        } finally {
+            setIsPublishing(false);
         }
     };
 
@@ -327,29 +467,60 @@ export default function EditPage() {
                             <Button
                                 id="save-button"
                                 size="sm"
+                                variant="outline"
                                 onClick={handleSave}
                                 isLoading={isSaving}
                                 disabled={!hasChanges}
-                                aria-label={hasChanges ? 'Save changes (Ctrl+S)' : 'No changes to save'}
-                                title="Ctrl+S"
+                                aria-label={hasChanges ? 'Save draft (Ctrl+S)' : 'No changes to save'}
+                                title="Ctrl+S - Save as Draft"
                             >
                                 {saveSuccess ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
-                                {saveSuccess ? 'Saved!' : 'Save'}
+                                {saveSuccess ? 'Saved Draft' : 'Save Draft'}
                             </Button>
-                        </div>
+                            <Button
+                                size="sm"
+                                onClick={() => setShowPublishModal(true)}
+                                isLoading={isPublishing}
+                                aria-label="Publish changes to live site"
+                                title="Publish to Live Site"
+                            >
+                                {publishSuccess ? <CheckCircle className="h-4 w-4" /> : <Upload className="h-4 w-4" />}
+                                {publishSuccess ? 'Published!' : 'Publish'}
+                            </Button>
+                        </div >
                     </div>
 
-                    {/* Unsaved Changes Alert */}
-                    {hasChanges && (
-                        <motion.div
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="mb-6 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 flex items-center gap-2"
-                        >
-                            <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                            <span className="text-sm text-amber-700 dark:text-amber-300">You have unsaved changes</span>
-                        </motion.div>
+                    {/* Draft Status Section */}
+                    {(draftUpdatedAt || lastPublishedAt) && (
+                        <div className="flex flex-wrap items-center gap-4 mb-6 text-sm">
+                            {draftUpdatedAt && (
+                                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                                    <Clock className="h-4 w-4" />
+                                    <span>Draft saved: <strong className="text-gray-900 dark:text-gray-200">{formatTimestamp(draftUpdatedAt)}</strong></span>
+                                </div>
+                            )}
+                            {lastPublishedAt && (
+                                <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                                    <CheckCircle className="h-4 w-4" />
+                                    <span>Published: <strong className="text-green-700 dark:text-green-300">{formatTimestamp(lastPublishedAt)}</strong></span>
+                                </div>
+                            )}
+                        </div>
                     )}
+
+                    {/* Unsaved Changes Alert */}
+                    {
+                        hasChanges && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="mb-6 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 flex items-center gap-2"
+                            >
+                                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                <span className="text-sm text-amber-700 dark:text-amber-300">You have unsaved changes</span>
+                            </motion.div>
+                        )
+                    }
 
                     {/* Save Success/Error Messages */}
                     <AnimatePresence>
@@ -399,309 +570,312 @@ export default function EditPage() {
                     </div>
 
                     {/* Branding Tab */}
-                    {activeTab === 'branding' && (
-                        <div className="grid lg:grid-cols-2 gap-6">
-                            {/* Company Info */}
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="text-lg">Company Information</CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <Input
-                                        label="Company Name"
-                                        value={brandSettings.companyName}
-                                        onChange={(e) => handleBrandChange('companyName', e.target.value)}
-                                        placeholder="Your Company Name"
-                                    />
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                                            Tagline
-                                        </label>
-                                        <textarea
-                                            value={brandSettings.tagline}
-                                            onChange={(e) => handleBrandChange('tagline', e.target.value)}
-                                            placeholder="A short description of your company..."
-                                            rows={3}
-                                            className="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow resize-none"
+                    {
+                        activeTab === 'branding' && (
+                            <div className="grid lg:grid-cols-2 gap-6">
+                                {/* Company Info */}
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-lg">Company Information</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <Input
+                                            label="Company Name"
+                                            value={brandSettings.companyName}
+                                            onChange={(e) => handleBrandChange('companyName', e.target.value)}
+                                            placeholder="Your Company Name"
                                         />
-                                    </div>
-                                    <Input
-                                        label="Website URL"
-                                        value={brandSettings.website}
-                                        onChange={(e) => handleBrandChange('website', e.target.value)}
-                                        placeholder="https://yourcompany.com"
-                                        icon={<LinkIcon className="h-4 w-4" />}
-                                    />
-                                </CardContent>
-                            </Card>
-
-                            {/* Colors */}
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="text-lg flex items-center gap-2">
-                                        <Palette className="h-5 w-5 text-indigo-500" />
-                                        Brand Colors
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                                                Primary
+                                                Tagline
                                             </label>
-                                            <div className="flex items-center gap-2">
-                                                <input
-                                                    type="color"
-                                                    value={brandSettings.primaryColor}
-                                                    onChange={(e) => handleBrandChange('primaryColor', e.target.value)}
-                                                    className="w-10 h-10 rounded cursor-pointer border-0"
+                                            <textarea
+                                                value={brandSettings.tagline}
+                                                onChange={(e) => handleBrandChange('tagline', e.target.value)}
+                                                placeholder="A short description of your company..."
+                                                rows={3}
+                                                className="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow resize-none"
+                                            />
+                                        </div>
+                                        <Input
+                                            label="Website URL"
+                                            value={brandSettings.website}
+                                            onChange={(e) => handleBrandChange('website', e.target.value)}
+                                            placeholder="https://yourcompany.com"
+                                            icon={<LinkIcon className="h-4 w-4" />}
+                                        />
+                                    </CardContent>
+                                </Card>
+
+                                {/* Colors */}
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-lg flex items-center gap-2">
+                                            <Palette className="h-5 w-5 text-indigo-500" />
+                                            Brand Colors
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                                                    Primary
+                                                </label>
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="color"
+                                                        value={brandSettings.primaryColor}
+                                                        onChange={(e) => handleBrandChange('primaryColor', e.target.value)}
+                                                        className="w-10 h-10 rounded cursor-pointer border-0"
+                                                    />
+                                                    <Input
+                                                        value={brandSettings.primaryColor}
+                                                        onChange={(e) => handleBrandChange('primaryColor', e.target.value)}
+                                                        className="font-mono text-sm"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                                                    Secondary
+                                                </label>
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="color"
+                                                        value={brandSettings.secondaryColor}
+                                                        onChange={(e) => handleBrandChange('secondaryColor', e.target.value)}
+                                                        className="w-10 h-10 rounded cursor-pointer border-0"
+                                                    />
+                                                    <Input
+                                                        value={brandSettings.secondaryColor}
+                                                        onChange={(e) => handleBrandChange('secondaryColor', e.target.value)}
+                                                        className="font-mono text-sm"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                                                    Accent
+                                                </label>
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="color"
+                                                        value={brandSettings.accentColor}
+                                                        onChange={(e) => handleBrandChange('accentColor', e.target.value)}
+                                                        className="w-10 h-10 rounded cursor-pointer border-0"
+                                                    />
+                                                    <Input
+                                                        value={brandSettings.accentColor}
+                                                        onChange={(e) => handleBrandChange('accentColor', e.target.value)}
+                                                        className="font-mono text-sm"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Color Preview */}
+                                        <div className="mt-4 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                                            <p className="text-sm text-gray-500 mb-3">Preview</p>
+                                            <div className="flex gap-2">
+                                                <div
+                                                    className="w-20 h-10 rounded"
+                                                    style={{ backgroundColor: brandSettings.primaryColor }}
                                                 />
+                                                <div
+                                                    className="w-20 h-10 rounded"
+                                                    style={{ backgroundColor: brandSettings.secondaryColor }}
+                                                />
+                                                <div
+                                                    className="w-20 h-10 rounded"
+                                                    style={{ backgroundColor: brandSettings.accentColor }}
+                                                />
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                {/* Media */}
+                                <Card className="lg:col-span-2">
+                                    <CardHeader>
+                                        <CardTitle className="text-lg flex items-center gap-2">
+                                            <Image className="h-5 w-5 text-indigo-500" />
+                                            Media Assets
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="grid sm:grid-cols-3 gap-6">
+                                            {/* Logo */}
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                                                    Company Logo
+                                                </label>
+                                                <div
+                                                    className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors cursor-pointer relative overflow-hidden group"
+                                                    onClick={() => document.getElementById('logo-upload')?.click()}
+                                                >
+                                                    {brandSettings.logoUrl ? (
+                                                        <div className="flex flex-col items-center">
+                                                            <img src={brandSettings.logoUrl} alt="Logo preview" className="h-16 w-16 object-contain mb-2" />
+                                                            <p className="text-xs text-indigo-600 dark:text-indigo-400">Click to replace</p>
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                                                            <p className="text-sm text-gray-500">Click or drag to upload</p>
+                                                            <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 2MB</p>
+                                                        </>
+                                                    )}
+                                                    <input
+                                                        id="logo-upload"
+                                                        type="file"
+                                                        accept="image/*"
+                                                        className="hidden"
+                                                        onChange={(e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (file) handleImageUpload(file, 'logoUrl');
+                                                        }}
+                                                    />
+                                                </div>
                                                 <Input
-                                                    value={brandSettings.primaryColor}
-                                                    onChange={(e) => handleBrandChange('primaryColor', e.target.value)}
-                                                    className="font-mono text-sm"
+                                                    placeholder="Or paste image URL..."
+                                                    value={brandSettings.logoUrl}
+                                                    onChange={(e) => handleBrandChange('logoUrl', e.target.value)}
+                                                    className="mt-2"
                                                 />
                                             </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                                                Secondary
-                                            </label>
-                                            <div className="flex items-center gap-2">
-                                                <input
-                                                    type="color"
-                                                    value={brandSettings.secondaryColor}
-                                                    onChange={(e) => handleBrandChange('secondaryColor', e.target.value)}
-                                                    className="w-10 h-10 rounded cursor-pointer border-0"
-                                                />
+
+                                            {/* Banner */}
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                                                    Hero Banner
+                                                </label>
+                                                <div
+                                                    className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors cursor-pointer relative overflow-hidden group"
+                                                    onClick={() => document.getElementById('banner-upload')?.click()}
+                                                >
+                                                    {brandSettings.bannerUrl ? (
+                                                        <div className="flex flex-col items-center">
+                                                            <img src={brandSettings.bannerUrl} alt="Banner preview" className="h-20 w-full object-cover rounded mb-2 opacity-70" />
+                                                            <p className="text-xs text-indigo-600 dark:text-indigo-400">Click to replace</p>
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                                                            <p className="text-sm text-gray-500">1920x600 recommended</p>
+                                                            <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 5MB</p>
+                                                        </>
+                                                    )}
+                                                    <input
+                                                        id="banner-upload"
+                                                        type="file"
+                                                        accept="image/*"
+                                                        className="hidden"
+                                                        onChange={(e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (file) handleImageUpload(file, 'bannerUrl');
+                                                        }}
+                                                    />
+                                                </div>
                                                 <Input
-                                                    value={brandSettings.secondaryColor}
-                                                    onChange={(e) => handleBrandChange('secondaryColor', e.target.value)}
-                                                    className="font-mono text-sm"
+                                                    placeholder="Or paste image URL..."
+                                                    value={brandSettings.bannerUrl}
+                                                    onChange={(e) => handleBrandChange('bannerUrl', e.target.value)}
+                                                    className="mt-2"
                                                 />
                                             </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                                                Accent
-                                            </label>
-                                            <div className="flex items-center gap-2">
-                                                <input
-                                                    type="color"
-                                                    value={brandSettings.accentColor}
-                                                    onChange={(e) => handleBrandChange('accentColor', e.target.value)}
-                                                    className="w-10 h-10 rounded cursor-pointer border-0"
-                                                />
+
+                                            {/* Culture Video */}
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                                                    Culture Video
+                                                </label>
+                                                <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors cursor-pointer">
+                                                    <Video className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                                                    <p className="text-sm text-gray-500">YouTube or Vimeo</p>
+                                                    <p className="text-xs text-gray-400 mt-1">Embed URL</p>
+                                                </div>
                                                 <Input
-                                                    value={brandSettings.accentColor}
-                                                    onChange={(e) => handleBrandChange('accentColor', e.target.value)}
-                                                    className="font-mono text-sm"
+                                                    placeholder="Paste video embed URL..."
+                                                    value={brandSettings.cultureVideoUrl}
+                                                    onChange={(e) => handleBrandChange('cultureVideoUrl', e.target.value)}
+                                                    className="mt-2"
                                                 />
                                             </div>
                                         </div>
-                                    </div>
-
-                                    {/* Color Preview */}
-                                    <div className="mt-4 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                                        <p className="text-sm text-gray-500 mb-3">Preview</p>
-                                        <div className="flex gap-2">
-                                            <div
-                                                className="w-20 h-10 rounded"
-                                                style={{ backgroundColor: brandSettings.primaryColor }}
-                                            />
-                                            <div
-                                                className="w-20 h-10 rounded"
-                                                style={{ backgroundColor: brandSettings.secondaryColor }}
-                                            />
-                                            <div
-                                                className="w-20 h-10 rounded"
-                                                style={{ backgroundColor: brandSettings.accentColor }}
-                                            />
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-
-                            {/* Media */}
-                            <Card className="lg:col-span-2">
-                                <CardHeader>
-                                    <CardTitle className="text-lg flex items-center gap-2">
-                                        <Image className="h-5 w-5 text-indigo-500" />
-                                        Media Assets
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="grid sm:grid-cols-3 gap-6">
-                                        {/* Logo */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                                                Company Logo
-                                            </label>
-                                            <div
-                                                className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors cursor-pointer relative overflow-hidden group"
-                                                onClick={() => document.getElementById('logo-upload')?.click()}
-                                            >
-                                                {brandSettings.logoUrl ? (
-                                                    <div className="flex flex-col items-center">
-                                                        <img src={brandSettings.logoUrl} alt="Logo preview" className="h-16 w-16 object-contain mb-2" />
-                                                        <p className="text-xs text-indigo-600 dark:text-indigo-400">Click to replace</p>
-                                                    </div>
-                                                ) : (
-                                                    <>
-                                                        <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                                                        <p className="text-sm text-gray-500">Click or drag to upload</p>
-                                                        <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 2MB</p>
-                                                    </>
-                                                )}
-                                                <input
-                                                    id="logo-upload"
-                                                    type="file"
-                                                    accept="image/*"
-                                                    className="hidden"
-                                                    onChange={(e) => {
-                                                        const file = e.target.files?.[0];
-                                                        if (file) handleImageUpload(file, 'logoUrl');
-                                                    }}
-                                                />
-                                            </div>
-                                            <Input
-                                                placeholder="Or paste image URL..."
-                                                value={brandSettings.logoUrl}
-                                                onChange={(e) => handleBrandChange('logoUrl', e.target.value)}
-                                                className="mt-2"
-                                            />
-                                        </div>
-
-                                        {/* Banner */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                                                Hero Banner
-                                            </label>
-                                            <div
-                                                className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors cursor-pointer relative overflow-hidden group"
-                                                onClick={() => document.getElementById('banner-upload')?.click()}
-                                            >
-                                                {brandSettings.bannerUrl ? (
-                                                    <div className="flex flex-col items-center">
-                                                        <img src={brandSettings.bannerUrl} alt="Banner preview" className="h-20 w-full object-cover rounded mb-2 opacity-70" />
-                                                        <p className="text-xs text-indigo-600 dark:text-indigo-400">Click to replace</p>
-                                                    </div>
-                                                ) : (
-                                                    <>
-                                                        <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                                                        <p className="text-sm text-gray-500">1920x600 recommended</p>
-                                                        <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 5MB</p>
-                                                    </>
-                                                )}
-                                                <input
-                                                    id="banner-upload"
-                                                    type="file"
-                                                    accept="image/*"
-                                                    className="hidden"
-                                                    onChange={(e) => {
-                                                        const file = e.target.files?.[0];
-                                                        if (file) handleImageUpload(file, 'bannerUrl');
-                                                    }}
-                                                />
-                                            </div>
-                                            <Input
-                                                placeholder="Or paste image URL..."
-                                                value={brandSettings.bannerUrl}
-                                                onChange={(e) => handleBrandChange('bannerUrl', e.target.value)}
-                                                className="mt-2"
-                                            />
-                                        </div>
-
-                                        {/* Culture Video */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                                                Culture Video
-                                            </label>
-                                            <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors cursor-pointer">
-                                                <Video className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                                                <p className="text-sm text-gray-500">YouTube or Vimeo</p>
-                                                <p className="text-xs text-gray-400 mt-1">Embed URL</p>
-                                            </div>
-                                            <Input
-                                                placeholder="Paste video embed URL..."
-                                                value={brandSettings.cultureVideoUrl}
-                                                onChange={(e) => handleBrandChange('cultureVideoUrl', e.target.value)}
-                                                className="mt-2"
-                                            />
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </div>
-                    )}
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        )
+                    }
 
                     {/* Content Tab */}
-                    {activeTab === 'content' && (
-                        <div className="space-y-6">
-                            <div className="flex items-center justify-between">
-                                <p className="text-sm text-gray-500 dark:text-gray-400">
-                                    Drag sections to reorder. Toggle visibility for each section.
-                                </p>
-                                <Button variant="outline" size="sm" onClick={addSection}>
-                                    <Plus className="h-4 w-4" />
-                                    Add Section
-                                </Button>
-                            </div>
+                    {
+                        activeTab === 'content' && (
+                            <div className="space-y-6">
+                                <div className="flex items-center justify-between">
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                        Drag sections to reorder. Toggle visibility for each section.
+                                    </p>
+                                    <Button variant="outline" size="sm" onClick={addSection}>
+                                        <Plus className="h-4 w-4" />
+                                        Add Section
+                                    </Button>
+                                </div>
 
-                            <Reorder.Group
-                                axis="y"
-                                values={sections}
-                                onReorder={(newOrder) => {
-                                    setSections(newOrder);
-                                    setHasChanges(true);
-                                }}
-                                className="space-y-4"
-                            >
-                                {sections.map((section) => (
-                                    <Reorder.Item key={section.id} value={section}>
-                                        <Card className="cursor-move hover:shadow-md transition-shadow">
-                                            <CardContent className="p-4 sm:p-6">
-                                                <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-                                                    {/* Drag Handle */}
-                                                    <div
-                                                        className="hidden sm:flex p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-grab active:cursor-grabbing"
-                                                        title="Drag to reorder"
-                                                        aria-label="Drag to reorder section"
-                                                    >
-                                                        <GripVertical className="h-5 w-5" />
-                                                    </div>
-
-                                                    {/* Main Content */}
-                                                    <div className="flex-1 space-y-4">
-                                                        {/* Header Row */}
-                                                        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                                                            <Input
-                                                                value={section.title}
-                                                                onChange={(e) => handleSectionChange(section.id, 'title', e.target.value)}
-                                                                placeholder="Section Title"
-                                                                className="font-medium flex-1"
-                                                                aria-label="Section title"
-                                                            />
-                                                            <select
-                                                                value={section.type}
-                                                                onChange={(e) => handleSectionChange(section.id, 'type', e.target.value)}
-                                                                className="w-full sm:w-auto px-3 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-indigo-500"
-                                                                aria-label="Section type"
-                                                            >
-                                                                <option value="about">About</option>
-                                                                <option value="culture">Culture</option>
-                                                                <option value="benefits">Benefits</option>
-                                                                <option value="values">Values</option>
-                                                                <option value="team">Team</option>
-                                                                <option value="custom">Custom</option>
-                                                            </select>
+                                <Reorder.Group
+                                    axis="y"
+                                    values={sections}
+                                    onReorder={(newOrder) => {
+                                        setSections(newOrder);
+                                        setHasChanges(true);
+                                    }}
+                                    className="space-y-4"
+                                >
+                                    {sections.map((section) => (
+                                        <Reorder.Item key={section.id} value={section}>
+                                            <Card className="cursor-move hover:shadow-md transition-shadow">
+                                                <CardContent className="p-4 sm:p-6">
+                                                    <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                                                        {/* Drag Handle */}
+                                                        <div
+                                                            className="hidden sm:flex p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-grab active:cursor-grabbing"
+                                                            title="Drag to reorder"
+                                                            aria-label="Drag to reorder section"
+                                                        >
+                                                            <GripVertical className="h-5 w-5" />
                                                         </div>
 
-                                                        {/* Templates / Snippets Toolbar */}
-                                                        <div className="flex gap-2 mb-2 overflow-x-auto pb-2">
-                                                            <button
-                                                                onClick={() => {
-                                                                    const template = `
+                                                        {/* Main Content */}
+                                                        <div className="flex-1 space-y-4">
+                                                            {/* Header Row */}
+                                                            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                                                                <Input
+                                                                    value={section.title}
+                                                                    onChange={(e) => handleSectionChange(section.id, 'title', e.target.value)}
+                                                                    placeholder="Section Title"
+                                                                    className="font-medium flex-1"
+                                                                    aria-label="Section title"
+                                                                />
+                                                                <select
+                                                                    value={section.type}
+                                                                    onChange={(e) => handleSectionChange(section.id, 'type', e.target.value)}
+                                                                    className="w-full sm:w-auto px-3 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-indigo-500"
+                                                                    aria-label="Section type"
+                                                                >
+                                                                    <option value="about">About</option>
+                                                                    <option value="culture">Culture</option>
+                                                                    <option value="benefits">Benefits</option>
+                                                                    <option value="values">Values</option>
+                                                                    <option value="team">Team</option>
+                                                                    <option value="custom">Custom</option>
+                                                                </select>
+                                                            </div>
+
+                                                            {/* Templates / Snippets Toolbar */}
+                                                            <div className="flex gap-2 mb-2 overflow-x-auto pb-2">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const template = `
 <div class="flex flex-col md:flex-row items-center gap-8 py-8">
   <div class="flex-1">
     <h3>Title Here</h3>
@@ -711,15 +885,15 @@ export default function EditPage() {
     <img src="https://via.placeholder.com/600x400" alt="Description" class="rounded-2xl shadow-lg w-full object-cover" />
   </div>
 </div>`;
-                                                                    handleSectionChange(section.id, 'content', section.content + template);
-                                                                }}
-                                                                className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md whitespace-nowrap"
-                                                            >
-                                                                + Text Left / Img Right
-                                                            </button>
-                                                            <button
-                                                                onClick={() => {
-                                                                    const template = `
+                                                                        handleSectionChange(section.id, 'content', section.content + template);
+                                                                    }}
+                                                                    className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md whitespace-nowrap"
+                                                                >
+                                                                    + Text Left / Img Right
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const template = `
 <div class="flex flex-col md:flex-row-reverse items-center gap-8 py-8">
   <div class="flex-1">
     <h3>Title Here</h3>
@@ -729,52 +903,74 @@ export default function EditPage() {
     <img src="https://via.placeholder.com/600x400" alt="Description" class="rounded-2xl shadow-lg w-full object-cover" />
   </div>
 </div>`;
-                                                                    handleSectionChange(section.id, 'content', section.content + template);
-                                                                }}
-                                                                className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md whitespace-nowrap"
-                                                            >
-                                                                + Img Left / Text Right
-                                                            </button>
-                                                            <button
-                                                                onClick={() => {
-                                                                    const template = `
+                                                                        handleSectionChange(section.id, 'content', section.content + template);
+                                                                    }}
+                                                                    className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md whitespace-nowrap"
+                                                                >
+                                                                    + Img Left / Text Right
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const template = `
 <div class="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-2xl mb-6">
   <h3 class="mb-2">Highlight Box</h3>
   <p class="mb-0">Important information goes here...</p>
 </div>`;
-                                                                    handleSectionChange(section.id, 'content', section.content + template);
-                                                                }}
-                                                                className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md whitespace-nowrap"
-                                                            >
-                                                                + Highlight Box
-                                                            </button>
+                                                                        handleSectionChange(section.id, 'content', section.content + template);
+                                                                    }}
+                                                                    className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md whitespace-nowrap"
+                                                                >
+                                                                    + Highlight Box
+                                                                </button>
+                                                            </div>
+
+                                                            {/* Content Textarea */}
+                                                            <div className="relative">
+                                                                <textarea
+                                                                    value={section.content}
+                                                                    onChange={(e) => handleSectionChange(section.id, 'content', e.target.value)}
+                                                                    placeholder="Section content (HTML supported)..."
+                                                                    rows={8}
+                                                                    className="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow resize-y font-mono text-sm min-h-[200px]"
+                                                                    aria-label="Section content"
+                                                                />
+                                                                <span className="absolute bottom-2 right-3 text-xs text-gray-400">
+                                                                    {section.content.length} chars
+                                                                </span>
+                                                            </div>
+
+                                                            {/* Mobile Controls Row */}
+                                                            <div className="flex items-center justify-between sm:hidden">
+                                                                <label className="flex items-center gap-2 cursor-pointer">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={section.is_visible}
+                                                                        onChange={(e) => handleSectionChange(section.id, 'is_visible', e.target.checked)}
+                                                                        className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                                                    />
+                                                                    <span className="text-sm text-gray-600 dark:text-gray-400">Visible</span>
+                                                                </label>
+                                                                <button
+                                                                    onClick={() => removeSection(section.id)}
+                                                                    className="p-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                                                                    aria-label="Delete section"
+                                                                    title="Delete section"
+                                                                >
+                                                                    <Trash2 className="h-5 w-5" />
+                                                                </button>
+                                                            </div>
                                                         </div>
 
-                                                        {/* Content Textarea */}
-                                                        <div className="relative">
-                                                            <textarea
-                                                                value={section.content}
-                                                                onChange={(e) => handleSectionChange(section.id, 'content', e.target.value)}
-                                                                placeholder="Section content (HTML supported)..."
-                                                                rows={8}
-                                                                className="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow resize-y font-mono text-sm min-h-[200px]"
-                                                                aria-label="Section content"
-                                                            />
-                                                            <span className="absolute bottom-2 right-3 text-xs text-gray-400">
-                                                                {section.content.length} chars
-                                                            </span>
-                                                        </div>
-
-                                                        {/* Mobile Controls Row */}
-                                                        <div className="flex items-center justify-between sm:hidden">
-                                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                        {/* Desktop Controls */}
+                                                        <div className="hidden sm:flex flex-col gap-2">
+                                                            <label className="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg">
                                                                 <input
                                                                     type="checkbox"
                                                                     checked={section.is_visible}
                                                                     onChange={(e) => handleSectionChange(section.id, 'is_visible', e.target.checked)}
-                                                                    className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                                                    className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                                                 />
-                                                                <span className="text-sm text-gray-600 dark:text-gray-400">Visible</span>
+                                                                <span className="text-xs text-gray-500">Visible</span>
                                                             </label>
                                                             <button
                                                                 onClick={() => removeSection(section.id)}
@@ -782,52 +978,41 @@ export default function EditPage() {
                                                                 aria-label="Delete section"
                                                                 title="Delete section"
                                                             >
-                                                                <Trash2 className="h-5 w-5" />
+                                                                <Trash2 className="h-4 w-4" />
                                                             </button>
                                                         </div>
                                                     </div>
+                                                </CardContent>
+                                            </Card>
+                                        </Reorder.Item>
+                                    ))}
+                                </Reorder.Group>
 
-                                                    {/* Desktop Controls */}
-                                                    <div className="hidden sm:flex flex-col gap-2">
-                                                        <label className="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={section.is_visible}
-                                                                onChange={(e) => handleSectionChange(section.id, 'is_visible', e.target.checked)}
-                                                                className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                                            />
-                                                            <span className="text-xs text-gray-500">Visible</span>
-                                                        </label>
-                                                        <button
-                                                            onClick={() => removeSection(section.id)}
-                                                            className="p-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
-                                                            aria-label="Delete section"
-                                                            title="Delete section"
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </CardContent>
-                                        </Card>
-                                    </Reorder.Item>
-                                ))}
-                            </Reorder.Group>
+                                {sections.length === 0 && (
+                                    <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600">
+                                        <Type className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                                        <p className="text-gray-500 dark:text-gray-400">No content sections yet</p>
+                                        <Button variant="outline" size="sm" onClick={addSection} className="mt-4">
+                                            <Plus className="h-4 w-4" />
+                                            Add Your First Section
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+                        )
+                    }
+                </div >
+            </main >
 
-                            {sections.length === 0 && (
-                                <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600">
-                                    <Type className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                                    <p className="text-gray-500 dark:text-gray-400">No content sections yet</p>
-                                    <Button variant="outline" size="sm" onClick={addSection} className="mt-4">
-                                        <Plus className="h-4 w-4" />
-                                        Add Your First Section
-                                    </Button>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-            </main>
-        </div>
+            {/* Publish Confirmation Modal */}
+            <PublishConfirmModal
+                isOpen={showPublishModal}
+                onClose={() => setShowPublishModal(false)}
+                onConfirm={handlePublish}
+                hasUnsavedChanges={hasChanges}
+                lastPublishedAt={lastPublishedAt}
+                isPublishing={isPublishing}
+            />
+        </div >
     );
 }

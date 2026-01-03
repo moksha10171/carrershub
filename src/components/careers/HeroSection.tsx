@@ -75,7 +75,7 @@ export function HeroSection({
                             />
                         </motion.div>
                     ) : (
-                        <div className="bg-indigo-600 dark:bg-indigo-500 p-5 rounded-3xl shadow-xl mb-8">
+                        <div className="bg-primary-600 dark:bg-primary-500 p-5 rounded-3xl shadow-xl mb-8">
                             <Briefcase className="h-10 w-10 text-white" />
                         </div>
                     )}
@@ -87,7 +87,7 @@ export function HeroSection({
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.3 }}
                     >
-                        Grow your career at <span className="text-indigo-600 dark:text-indigo-400 block sm:inline">{companyName}</span>
+                        Grow your career at <span className="text-primary-600 dark:text-primary-400 block sm:inline">{companyName}</span>
                     </motion.h1>
 
                     {/* Tagline */}
@@ -110,11 +110,11 @@ export function HeroSection({
                         transition={{ delay: 0.5 }}
                     >
                         <div className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-full shadow-sm">
-                            <Briefcase className="h-5 w-5 text-indigo-500" />
+                            <Briefcase className="h-5 w-5 text-primary-500" />
                             <span className="text-sm sm:text-base font-semibold text-gray-700 dark:text-gray-200">{jobCount} Openings</span>
                         </div>
                         <div className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-100 rounded-full shadow-sm">
-                            <MapPin className="h-5 w-5 text-indigo-500" />
+                            <MapPin className="h-5 w-5 text-primary-500" />
                             <span className="text-sm sm:text-base font-semibold text-gray-700 dark:text-gray-200">Global Remote</span>
                         </div>
                     </motion.div>
