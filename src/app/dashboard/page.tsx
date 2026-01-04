@@ -11,12 +11,14 @@ import {
     BarChart3, TrendingUp, Globe, ExternalLink, Edit, Plus, Building
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import type { Company, Job } from '@/types';
+import type { User } from '@supabase/supabase-js';
 
 export default function DashboardPage() {
     const [copied, setCopied] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
-    const [user, setUser] = useState<any>(null);
-    const [company, setCompany] = useState<any>(null);
+    const [user, setUser] = useState<User | null>(null);
+    const [company, setCompany] = useState<Company | null>(null);
     const [hasCompany, setHasCompany] = useState(true);
     const router = useRouter();
     const supabase = createClient();
@@ -27,8 +29,8 @@ export default function DashboardPage() {
         { label: 'Locations', value: '0', icon: Globe, change: 'Loading...', color: 'blue' },
         { label: 'Remote Jobs', value: '0', icon: Eye, change: 'Loading...', color: 'green' },
     ]);
-    const [recentJobs, setRecentJobs] = useState<any[]>([]);
-    const [analyticsData, setAnalyticsData] = useState<any>(null);
+    const [recentJobs, setRecentJobs] = useState<Job[]>([]);
+    const [analyticsData, setAnalyticsData] = useState<{ totalViews: number; uniqueVisitors: number; totalApplications: number; viewsChange: string; visitorsChange: string; applicationsChange: string; avgTimeOnPage: string; timeChange: string; } | null>(null);
 
     // Check authentication and fetch company
     useEffect(() => {

@@ -14,7 +14,6 @@ import {
 import { createClient } from '@/lib/supabase/client';
 import { PublishConfirmModal } from '@/components/edit/PublishConfirmModal';
 import { formatTimestamp } from '@/lib/utils/formatTimestamp';
-import { useAutoSave } from '@/hooks/useAutoSave';
 import { useHeartbeat } from '@/hooks/useHeartbeat';
 
 interface ContentSectionEdit {
@@ -86,15 +85,7 @@ export default function EditPage() {
     const [conflictData, setConflictData] = useState<any>(null);
 
     // Auto-save hook (saves every 30 seconds if there are changes)
-    const { lastSaved: autoSaveTime, isSaving: isAutoSaving } = useAutoSave(
-        hasChanges,
-        async () => {
-            if (companyId) {
-                await handleSave();
-            }
-        },
-        { interval: 30000, enabled: !!companyId }
-    );
+
 
     // Heartbeat hook (tracks concurrent editors)
     const { activeEditors } = useHeartbeat({
@@ -170,7 +161,6 @@ export default function EditPage() {
 
                     // If no draft exists, create initial draft from published data
                     if (!draftData.draft) {
-                        console.log('No draft found, creating initial draft from published data');
                         try {
                             await fetch('/api/companies/save', {
                                 method: 'POST',

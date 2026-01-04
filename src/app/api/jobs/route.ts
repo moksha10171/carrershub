@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-// import { getFilterOptions } from '@/lib/data';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import type { Job } from '@/types';
 

@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-import { User, Lock, Mail, ChevronLeft, LogOut, CheckCircle, AlertCircle, Trash2, Building } from 'lucide-react';
+import { User as UserIcon, Lock, Mail, ChevronLeft, LogOut, CheckCircle, AlertCircle, Trash2, Building } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
+import type { User } from '@supabase/supabase-js';
+import type { Company } from '@/types';
 
 export default function SettingsPage() {
-    const [user, setUser] = useState<any>(null);
+    const [user, setUser] = useState<User | null>(null);
     const [fullName, setFullName] = useState('');
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState(false);
@@ -18,7 +20,7 @@ export default function SettingsPage() {
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
     const [nameMessage, setNameMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
     const [passwords, setPasswords] = useState({ new: '', confirm: '' });
-    const [company, setCompany] = useState<any>(null);
+    const [company, setCompany] = useState<Company | null>(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteConfirmText, setDeleteConfirmText] = useState('');
     const [isDeleting, setIsDeleting] = useState(false);
@@ -69,8 +71,10 @@ export default function SettingsPage() {
             if (error) throw error;
 
             setNameMessage({ type: 'success', text: 'Name updated successfully.' });
-            // Update local user object
-            setUser({ ...user, user_metadata: { ...user.user_metadata, full_name: fullName } });
+            // Update local user object - we know user is not null here
+            if (user) {
+                setUser({ ...user, user_metadata: { ...user.user_metadata, full_name: fullName } });
+            }
         } catch (error: any) {
             setNameMessage({ type: 'error', text: error.message || 'Failed to update name.' });
         } finally {
@@ -205,7 +209,7 @@ export default function SettingsPage() {
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
-                                    <User className="h-5 w-5 text-indigo-500" />
+                                    <UserIcon className="h-5 w-5 text-indigo-500" />
                                     Profile Information
                                 </CardTitle>
                             </CardHeader>
@@ -216,7 +220,7 @@ export default function SettingsPage() {
                                             Full Name
                                         </label>
                                         <div className="relative">
-                                            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                            <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                                             <Input
                                                 value={fullName}
                                                 onChange={(e) => setFullName(e.target.value)}
@@ -393,7 +397,7 @@ export default function SettingsPage() {
                         <Card className="border-red-500 dark:border-red-700">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
-                                    <User className="h-5 w-5" />
+                                    <UserIcon className="h-5 w-5" />
                                     Delete Account
                                 </CardTitle>
                             </CardHeader>

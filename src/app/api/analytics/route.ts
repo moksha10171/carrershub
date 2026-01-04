@@ -2,13 +2,42 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { requireAuth, unauthorizedResponse } from '@/lib/api/auth';
 
-interface PageView {
-    id: string;
-    visitor_id: string | null;
-    referrer: string | null;
-    user_agent: string | null;
-    created_at: string;
-    job_id: string | null;
+interface AnalyticsOverview {
+    totalViews: number;
+    viewsChange: string;
+    uniqueVisitors: number;
+    visitorsChange: string;
+    totalApplications: number;
+    applicationsChange: string;
+    avgTimeOnPage: string;
+    timeChange: string;
+}
+
+interface ViewsChartData {
+    date: string;
+    views: number;
+    applicants: number;
+}
+
+interface TopJob {
+    title: string;
+    views: number;
+    applications: number;
+    conversion: string;
+}
+
+interface TrafficSource {
+    name: string;
+    value: number;
+    color: string;
+}
+
+interface AnalyticsData {
+    overview: AnalyticsOverview;
+    viewsOverTime: ViewsChartData[];
+    topJobs: TopJob[];
+    trafficSources: TrafficSource[];
+    deviceBreakdown: TrafficSource[];
 }
 
 interface JobApplication {
@@ -56,164 +85,111 @@ export async function GET(request: NextRequest) {
         const days = range === '7d' ? 7 : range === '90d' ? 90 : 30;
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - days);
+        const startDateStr = startDate.toISOString();
+        const endDateStr = new Date().toISOString();
 
-        // Fetch Page Views
-        const { data: pageViews, error: viewsError } = await supabase
-            .from('page_views')
-            .select('*')
-            .eq('company_id', companyId)
-            .gte('created_at', startDate.toISOString());
+        // 1. Overview Metrics (Parallel inefficient counts)
+        const [
+            { count: totalViews },
+            { data: uniqueCount },
+            { count: totalApplications }
+        ] = await Promise.all([
+            // Total Views
+            supabase
+                .from('page_views')
+                .select('*', { count: 'exact', head: true })
+                .eq('company_id', companyId)
+                .gte('created_at', startDateStr),
 
-        if (viewsError) throw viewsError;
+            // Unique Visitors (via RPC)
+            supabase.rpc('get_unique_visitors', {
+                p_company_id: companyId,
+                p_start_date: startDateStr
+            }),
 
-        // Fetch Job Applications
-        const { data: applications, error: appsError } = await supabase
-            .from('job_applications')
-            .select('*, jobs(title)')
-            .eq('company_id', companyId)
-            .gte('created_at', startDate.toISOString());
+            // Total Applications
+            supabase
+                .from('job_applications')
+                .select('*', { count: 'exact', head: true })
+                .eq('company_id', companyId)
+                .gte('created_at', startDateStr)
+        ]);
 
-        if (appsError) throw appsError;
+        // 2. Views Over Time (via RPC)
+        const { data: dailyViews } = await supabase.rpc('get_daily_page_views', {
+            p_company_id: companyId,
+            p_start_date: startDateStr,
+            p_end_date: endDateStr
+        });
 
-        // Fetch All Jobs (for top jobs list)
-        const { data: jobs, error: jobsError } = await supabase
-            .from('jobs')
-            .select('id, title')
-            .eq('company_id', companyId);
+        // 3. Top Jobs (via RPC)
+        const { data: topJobs } = await supabase.rpc('get_top_performing_jobs', {
+            p_company_id: companyId,
+            p_limit: 5
+        });
 
-        if (jobsError) throw jobsError;
+        // Format chart data
+        // Fill in missing dates with 0
+        const viewsMap = new Map();
+        if (dailyViews) {
+            dailyViews.forEach((d: any) => viewsMap.set(d.view_date, Number(d.count)));
+        }
 
-        // --- Aggregation Logic ---
-
-        // 1. Overview Metrics
-        const totalViews = pageViews?.length || 0;
-        // Unique visitors based on visitor_id
-        const uniqueVisitors = new Set(pageViews?.map((v: PageView) => v.visitor_id).filter(Boolean)).size;
-        const totalApplications = applications?.length || 0;
-
-        // Mock avg time (since we don't track duration yet)
-        const avgTimeOnPage = '1m 24s';
-
-        // 2. Views Over Time (Line Chart)
-        const viewsMap = new Map<string, { views: number, visitors: Set<string> }>();
-
-        // Initialize all dates in range with 0
+        const chartData = [];
         for (let i = 0; i < days; i++) {
-            const d = new Date();
-            d.setDate(d.getDate() - i);
-            const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            viewsMap.set(dateStr, { views: 0, visitors: new Set() });
+            const date = new Date();
+            date.setDate(date.getDate() - (days - 1 - i));
+            const dateStr = date.toISOString().split('T')[0];
+
+            chartData.push({
+                date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                views: viewsMap.get(dateStr) || 0,
+                applicants: 0 // TODO: Add daily applicants RPC if needed
+            });
         }
 
-        pageViews?.forEach((view: PageView) => {
-            const date = new Date(view.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            if (viewsMap.has(date)) {
-                const entry = viewsMap.get(date)!;
-                entry.views++;
-                if (view.visitor_id) entry.visitors.add(view.visitor_id);
-            }
-        });
+        // Calculate conversion rates for top jobs
+        const topJobsWithConversion = topJobs?.map((j: any) => {
+            const views = Number(j.view_count) || 0;
+            const applications = 0; // TODO: Add RPC to get applications per job
+            const conversionRate = views > 0 ? ((applications / views) * 100).toFixed(1) : '0.0';
+            return {
+                title: j.job_title,
+                views,
+                applications,
+                conversion: `${conversionRate}%`
+            };
+        }) || [];
 
-        // Convert map to array and reverse to show oldest to newest
-        const viewsOverTime = Array.from(viewsMap.entries()).map(([date, data]) => ({
-            date,
-            views: data.views,
-            visitors: data.visitors.size
-        })).reverse();
-
-        // 3. Top Jobs Stats
-        const jobStats = new Map<string, { id: string, title: string, views: number, applications: number }>();
-
-        jobs?.forEach((job: Job) => {
-            jobStats.set(job.id, { id: job.id, title: job.title, views: 0, applications: 0 });
-        });
-
-        pageViews?.forEach((view: PageView) => {
-            if (view.job_id && jobStats.has(view.job_id)) {
-                jobStats.get(view.job_id)!.views++;
-            }
-        });
-
-        applications?.forEach((app: JobApplication) => {
-            if (app.job_id && jobStats.has(app.job_id)) {
-                jobStats.get(app.job_id)!.applications++;
-            }
-        });
-
-        const topJobs = Array.from(jobStats.values())
-            .map(stat => ({
-                title: stat.title,
-                views: stat.views,
-                applications: stat.applications,
-                conversion: stat.views > 0 ? `${((stat.applications / stat.views) * 100).toFixed(1)}%` : '0%'
-            }))
-            .sort((a, b) => b.views - a.views)
-            .slice(0, 5); // Top 5
-
-        // 4. Traffic Sources (Pie Chart)
-        const sourceMap = new Map<string, number>();
-        pageViews?.forEach((view: PageView) => {
-            const source = view.referrer || 'Direct';
-            // Simple normalization
-            let cleanSource = 'Direct';
-            if (source.includes('google')) cleanSource = 'Google';
-            else if (source.includes('linkedin')) cleanSource = 'LinkedIn';
-            else if (source.includes('twitter') || source.includes('t.co')) cleanSource = 'Twitter';
-            else if (source !== 'Direct') cleanSource = 'Other';
-
-            sourceMap.set(cleanSource, (sourceMap.get(cleanSource) || 0) + 1);
-        });
-
-        const trafficSources = Array.from(sourceMap.entries()).map(([name, value], i) => ({
-            name,
-            value,
-            color: ['#6366f1', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'][i % 5]
-        }));
-
-        if (trafficSources.length === 0) {
-            trafficSources.push({ name: 'No Data', value: 1, color: '#e5e7eb' });
-        }
-
-        // 5. Device Breakdown (Bar Chart)
-        // Since we don't have user_agent parser yet, we'll mock or infer simpler
-        const deviceData = [
-            { name: 'Desktop', value: 0, color: '#6366f1' },
-            { name: 'Mobile', value: 0, color: '#8b5cf6' },
-            { name: 'Tablet', value: 0, color: '#ec4899' },
-        ];
-
-        pageViews?.forEach((view: PageView) => {
-            const ua = (view.user_agent || '').toLowerCase();
-            if (ua.includes('mobile')) deviceData[1].value++;
-            else if (ua.includes('tablet') || ua.includes('ipad')) deviceData[2].value++;
-            else deviceData[0].value++;
-        });
-
-        // Handle empty case
-        if (deviceData.every(d => d.value === 0)) {
-            deviceData[0].value = 1; // Default to desktop to avoid empty chart
-        }
-
-        const realData = {
+        // Formulate response to match Frontend expectations
+        const responseData = {
             overview: {
-                totalViews,
-                viewsChange: '+0%', // meaningful change requires previous period comparison
-                uniqueVisitors,
-                visitorsChange: '+0%',
-                totalApplications,
-                applicationsChange: '+0%',
-                avgTimeOnPage,
+                totalViews: totalViews || 0,
+                viewsChange: '+0%', // TODO: Calculate compared to previous period
+                uniqueVisitors: uniqueCount || 0,
+                visitorsChange: '+0%', // TODO: Calculate compared to previous period
+                totalApplications: totalApplications || 0,
+                applicationsChange: '+0%', // TODO: Calculate compared to previous period
+                avgTimeOnPage: 'N/A', // Note: Requires time tracking implementation
                 timeChange: '0%'
             },
-            viewsOverTime,
-            topJobs,
-            trafficSources,
-            deviceBreakdown: deviceData
+            viewsOverTime: chartData,
+            topJobs: topJobsWithConversion,
+            trafficSources: [
+                { name: 'Direct', value: (totalViews || 0) > 0 ? totalViews : 1, color: '#6366f1' }
+                // TODO: Add actual traffic source tracking
+            ],
+            deviceBreakdown: [
+                { name: 'Desktop', value: (totalViews || 0) > 0 ? totalViews : 1, color: '#6366f1' },
+                { name: 'Mobile', value: 0, color: '#8b5cf6' },
+                { name: 'Tablet', value: 0, color: '#ec4899' }
+                // TODO: Add actual device tracking from user_agent parsing
+            ]
         };
 
         return NextResponse.json({
             success: true,
-            data: realData
+            data: responseData
         });
     } catch (error: any) {
         console.error('Analytics API error:', error);

@@ -13,11 +13,12 @@ import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import type { Company } from '@/types';
 
 export default function ApplicationsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [applications, setApplications] = useState<any[]>([]);
-    const [company, setCompany] = useState<any>(null);
+    const [company, setCompany] = useState<Company | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const supabase = createClient();
@@ -38,7 +39,7 @@ export default function ApplicationsPage() {
                 .single();
 
             if (companyData) {
-                setCompany(companyData);
+                setCompany(companyData as Company);
                 fetchApplications(companyData.id);
             } else {
                 router.push('/dashboard');

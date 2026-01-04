@@ -11,9 +11,9 @@ import {
     Upload, FileSpreadsheet, Plus, Trash2, Edit2, Eye, EyeOff,
     CheckCircle, AlertCircle, Download, ChevronLeft, Search, Filter
 } from 'lucide-react';
-// import { getAllJobs } from '@/lib/data';
 import { createClient } from '@/lib/supabase/client';
-import type { Job } from '@/types';
+import type { Job, Company } from '@/types';
+import type { User } from '@supabase/supabase-js';
 
 interface ParsedJob {
     title: string;
@@ -30,8 +30,8 @@ export default function JobsManagementPage() {
     const [jobs, setJobs] = useState<Job[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isAuthLoading, setIsAuthLoading] = useState(true);
-    const [user, setUser] = useState<any>(null);
-    const [company, setCompany] = useState<any>(null);
+    const [user, setUser] = useState<User | null>(null);
+    const [company, setCompany] = useState<Company | null>(null);
     const router = useRouter();
     const supabase = createClient();
 
@@ -57,6 +57,13 @@ export default function JobsManagementPage() {
     // Save job (create or update)
     const handleSaveJob = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+
+        // Guard: Ensure company exists
+        if (!company) {
+            setUploadError('Company not found. Please refresh the page.');
+            return;
+        }
+
         setIsSaving(true);
         setUploadError('');
 
@@ -101,7 +108,7 @@ export default function JobsManagementPage() {
             setShowAddModal(false);
             setEditingJob(null);
         } catch (error: any) {
-            setUploadError(error.message || 'Failed to save job');
+            setUploadError(error.message || 'Unable to save job. Please check your connection and try again.');
         } finally {
             setIsSaving(false);
         }
@@ -132,7 +139,7 @@ export default function JobsManagementPage() {
             setUploadSuccess(true);
             setTimeout(() => setUploadSuccess(false), 3000);
         } catch (error: any) {
-            setUploadError(error.message || 'Failed to load sample data');
+            setUploadError(error.message || 'Unable to load sample data. Please try again.');
         } finally {
             setIsLoadingSampleData(false);
         }
@@ -640,10 +647,10 @@ export default function JobsManagementPage() {
                                 <p className="text-xs text-blue-700 dark:text-blue-300 mb-2">
                                     Your CSV should have columns: title, location, department, work_policy, employment_type, experience_level, job_type, salary_range
                                 </p>
-                                <button className="text-xs text-blue-600 dark:text-blue-400 underline hover:no-underline flex items-center gap-1">
+                                <a href="/api/jobs/template" download className="text-xs text-blue-600 dark:text-blue-400 underline hover:no-underline flex items-center gap-1">
                                     <Download className="h-3 w-3" />
                                     Download template
-                                </button>
+                                </a>
                             </div>
                         </div>
                     </div>

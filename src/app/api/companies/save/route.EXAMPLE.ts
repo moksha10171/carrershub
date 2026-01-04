@@ -1,35 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { requireAuth, unauthorizedResponse } from '@/lib/api/auth';
+import { SaveDraftRequestSchema, validateRequest, formatValidationErrors } from '@/lib/validation/schemas';
+import { withRateLimit, addRateLimitHeaders, checkRateLimit } from '@/lib/ratelimit';
 
 /**
- * Save company changes to draft
- * This allows editing without affecting the live site
+ * IMPROVED: Save company changes to draft with validation and rate limiting
  */
 export async function POST(request: NextRequest) {
+    // 1. RATE LIMITING (strict - 10 requests per 10 seconds)
+    const rateLimitResult = await withRateLimit(request, 'strict');
+    if (rateLimitResult) {
+        return rateLimitResult; // Return 429 if rate limited
+    }
+
+    // 2. AUTHENTICATION
     const { user, error: authError } = await requireAuth(request);
     if (authError || !user) {
         return unauthorizedResponse();
     }
 
     try {
+        // 3. PARSE & VALIDATE REQUEST BODY
         const body = await request.json();
-        const { company, settings, sections } = body;
+        const validation = validateRequest(SaveDraftRequestSchema, body);
 
-        if (!company?.id) {
-            return NextResponse.json(
-                { success: false, error: 'Company ID is required' },
-                { status: 400 }
-            );
+        if (!validation.success) {
+            return NextResponse.json({
+                success: false,
+                error: 'Validation failed',
+                errors: formatValidationErrors(validation.errors)
+            }, { status: 400 });
         }
+
+        const { company, settings, sections } = validation.data;
 
         const supabase = await createServerSupabaseClient();
 
-        // Verify ownership
+        // 4. VERIFY OWNERSHIP
         const { data: existingCompany } = await supabase
             .from('companies')
             .select('id, user_id')
-            .eq('id', company.id)
+            .eq('id', company.id!)
             .single();
 
         if (!existingCompany || existingCompany.user_id !== user.id) {
@@ -39,23 +51,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Validate draft data before saving
-        if (company && (!company.name || company.name.trim() === '')) {
-            return NextResponse.json(
-                { success: false, error: 'Company name is required' },
-                { status: 400 }
-            );
-        }
-
-        if (sections && !Array.isArray(sections)) {
-            return NextResponse.json(
-                { success: false, error: 'Sections must be an array' },
-                { status: 400 }
-            );
-        }
-
-        // Check for conflicts (has published version changed since draft was created?)
-        // This is optional - if version columns don't exist, skip conflict check
+        // 5. CHECK FOR CONFLICTS (version tracking - optional)
         let currentPublished = null;
         let existingDraft = null;
 
@@ -63,18 +59,17 @@ export async function POST(request: NextRequest) {
             const { data: publishedData } = await supabase
                 .from('companies')
                 .select('version')
-                .eq('id', company.id)
+                .eq('id', company.id!)
                 .single();
             currentPublished = publishedData;
 
             const { data: draftData } = await supabase
                 .from('draft_companies')
                 .select('base_version, version')
-                .eq('company_id', company.id)
+                .eq('company_id', company.id!)
                 .single();
             existingDraft = draftData;
 
-            // If draft exists and published version has changed, return conflict
             if (existingDraft && currentPublished) {
                 const publishedVersion = currentPublished.version || 1;
                 const draftBaseVersion = existingDraft.base_version || 1;
@@ -86,7 +81,7 @@ export async function POST(request: NextRequest) {
                         error: 'Content was published by another user. Please review changes before continuing.',
                         publishedVersion,
                         draftBaseVersion
-                    }, { status: 409 }); // 409 Conflict
+                    }, { status: 409 });
                 }
             }
         } catch (versionError) {
@@ -94,7 +89,7 @@ export async function POST(request: NextRequest) {
             // Silently continue without version tracking
         }
 
-        // Create or update draft entry
+        // 6. SAVE DRAFT
         const draftData: any = {
             company_id: company.id,
             user_id: user.id,
@@ -104,7 +99,7 @@ export async function POST(request: NextRequest) {
             updated_at: new Date().toISOString()
         };
 
-        // Only add version fields if they're supported
+        // Add version fields if supported
         if (currentPublished?.version !== undefined) {
             draftData.base_version = currentPublished.version || 1;
         }
@@ -112,7 +107,6 @@ export async function POST(request: NextRequest) {
             draftData.version = (existingDraft.version || 0) + 1;
         }
 
-        // Upsert to draft_companies table
         const { error: draftError } = await supabase
             .from('draft_companies')
             .upsert(draftData, {
@@ -127,11 +121,16 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        return NextResponse.json({
+        // 7. RETURN SUCCESS WITH RATE LIMIT HEADERS
+        const response = NextResponse.json({
             success: true,
             message: 'Draft saved successfully',
             updatedAt: new Date().toISOString()
         });
+
+        // Add rate limit headers to response
+        const rateLimitInfo = await checkRateLimit(request, 'strict', user.id);
+        return addRateLimitHeaders(response, rateLimitInfo);
 
     } catch (error: any) {
         console.error('Save draft error:', error);
@@ -143,9 +142,15 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * Get draft data for a company
+ * IMPROVED: Get draft data with caching headers
  */
 export async function GET(request: NextRequest) {
+    // Rate limiting (lenient for reads)
+    const rateLimitResult = await withRateLimit(request, 'lenient');
+    if (rateLimitResult) {
+        return rateLimitResult;
+    }
+
     const { user, error: authError } = await requireAuth(request);
     if (authError || !user) {
         return unauthorizedResponse();
@@ -185,10 +190,16 @@ export async function GET(request: NextRequest) {
             .eq('company_id', companyId)
             .single();
 
-        return NextResponse.json({
+        const response = NextResponse.json({
             success: true,
             draft
         });
+
+        // Add cache headers (short-lived for draft data)
+        response.headers.set('Cache-Control', 'private, max-age=10');
+
+        const rateLimitInfo = await checkRateLimit(request, 'lenient', user.id);
+        return addRateLimitHeaders(response, rateLimitInfo);
 
     } catch (error: any) {
         console.error('Get draft error:', error);

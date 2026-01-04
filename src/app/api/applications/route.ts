@@ -16,6 +16,10 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'Company ID required' }, { status: 400 });
         }
 
+        const page = parseInt(searchParams.get('page') || '1');
+        const limit = parseInt(searchParams.get('limit') || '20');
+        const offset = (page - 1) * limit;
+
         const supabase = await createServerSupabaseClient();
 
         // Verify ownership
@@ -30,23 +34,30 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 });
         }
 
-        // Fetch applications with job titles
-        const { data: applications, error } = await supabase
+        // Fetch applications with pagination
+        const { data: applications, error, count } = await supabase
             .from('job_applications')
             .select(`
                 *,
                 jobs (
                     title
                 )
-            `)
+            `, { count: 'exact' })
             .eq('company_id', companyId)
-            .order('created_at', { ascending: false });
+            .order('created_at', { ascending: false })
+            .range(offset, offset + limit - 1);
 
         if (error) throw error;
 
         return NextResponse.json({
             success: true,
-            applications: applications || []
+            applications: applications || [],
+            metadata: {
+                total: count || 0,
+                page,
+                limit,
+                totalPages: Math.ceil((count || 0) / limit)
+            }
         });
 
     } catch (error: any) {
